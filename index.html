@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Meta and SEO -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lofi Desk</title>
+
+    <!-- Favicon -->
+    <link rel="icon" href="logo2.png" type="image/png">
+
+    <!-- Fonts and Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
+    <style>
+        /* 
+         * Lofi Desk - Stylesheet
+         * 1. Base & Theming
+         * 2. Core Layout (Background, Header, Main, Footer)
+         * 3. UI Components (Panels, Buttons, Players)
+         * 4. Pop-up Panels (Scenes, Ambience, Pomodoro, To-Do)
+         * 5. Responsive Design
+        */
+
+        /* 1. Base & Theming */
+        :root {
+            --primary-text: #e0e0e0;
+            --accent-color: #a67cff; /* Muted Purple */
+            --accent-glow: rgba(166, 124, 255, 0.5);
+            --panel-bg: rgba(20, 25, 40, 0.6);
+            --panel-border: rgba(255, 255, 255, 0.1);
+            --font-family: 'Poppins', sans-serif;
+            --transition-speed: 0.3s;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            font-family: var(--font-family);
+            color: var(--primary-text);
+        }
+
+        /* 2. Core Layout */
+        #background-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -2; background-color: #000;
+        }
+        
+        #background-video {
+            width: 100%; height: 100%; object-fit: cover;
+            transition: opacity 0.8s ease-in-out; filter: brightness(0.7);
+        }
+
+        #top-bar {
+            position: fixed; top: 0; left: 0; width: 100%;
+            padding: 20px 30px; display: flex; justify-content: space-between;
+            align-items: center; z-index: 15; pointer-events: none;
+        }
+        #top-bar > * {
+            pointer-events: auto; /* Re-enable events for children */
+        }
+        #logo {
+           height: 105px; width: auto;
+           filter: drop-shadow(0 0 5px rgba(0,0,0,0.5));
+           transition: height var(--transition-speed) ease;
+        }
+        #datetime {
+            text-align: right; font-weight: 300;
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+        #time { font-size: 2em; font-weight: 600; }
+        #date { font-size: 1em; }
+        
+        #main-content {
+            /* This is a wrapper for desktop players to manage their layout */
+            /* On mobile, it becomes a flex container for centering */
+            display: contents; /* Behaves as if it's not there on desktop */
+        }
+
+        #bottom-controls {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 15px; background: var(--panel-bg); backdrop-filter: blur(10px);
+            padding: 10px 20px; border-radius: 50px; border: 1px solid var(--panel-border); z-index: 30;
+        }
+        
+        /* 3. UI Components */
+        .ui-panel {
+            position: fixed; background: var(--panel-bg); backdrop-filter: blur(15px);
+            border: 1px solid var(--panel-border); border-radius: 15px; padding: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); z-index: 20;
+            display: none; flex-direction: column; gap: 15px;
+            max-height: 80vh; overflow-y: auto; animation: fadeIn 0.3s ease-out;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .ui-panel.active { display: flex; }
+
+        .panel-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .panel-header h4 { margin: 0; font-weight: 400; }
+        .panel-header .control-button { font-size: 1.2rem; padding: 0; }
+        .panel-content { display: flex; flex-direction: column; gap: 15px; transition: all var(--transition-speed) ease; overflow: hidden; }
+
+        #soundcloud-sidebar {
+            left: 20px; top: 50%; transform: translateY(-50%); width: 300px;
+            padding: 15px; gap: 10px; z-index: 10;
+        }
+        #soundcloud-sidebar.minimized #soundcloud-content,
+        #music-player.minimized #youtube-content {
+            max-height: 0; opacity: 0; margin: 0; padding: 0; visibility: hidden;
+        }
+        #soundcloud-embed { width: 100%; height: 352px; border-radius: 12px; border: none; }
+        #soundcloud-url-form { display: flex; gap: 10px; }
+        #soundcloud-url-input { flex-grow: 1; background: rgba(0,0,0,0.3); border: 1px solid var(--panel-border); border-radius: 5px; padding: 8px; color: var(--primary-text); font-size: 0.8em; }
+        #soundcloud-url-form button { background: var(--accent-color); border: none; color: white; padding: 0 15px; border-radius: 5px; cursor: pointer; }
+
+        #music-player {
+            position: fixed; bottom: 20px; right: 30px; width: 320px;
+            z-index: 10; padding: 15px; gap: 10px;
+        }
+        #youtube-embed { aspect-ratio: 16 / 9; width: 100%; border: none; border-radius: 10px; }
+        #youtube-url-form { display: flex; gap: 10px; }
+        #youtube-url-input { flex-grow: 1; background: rgba(0,0,0,0.3); border: 1px solid var(--panel-border); border-radius: 5px; padding: 8px; color: var(--primary-text); font-size: 0.8em; }
+        #youtube-url-form button { background: var(--accent-color); border: none; color: white; padding: 0 15px; border-radius: 5px; cursor: pointer; }
+        #youtube-url-input:focus { outline: 1px solid var(--accent-color); }
+        
+        .control-container { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+        .control-button {
+            background: none; border: none; color: var(--primary-text); font-size: 1.5rem; cursor: pointer;
+            transition: all var(--transition-speed); padding: 5px; border-radius: 50%; width: 44px; height: 44px;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .control-label { font-size: 0.65rem; font-weight: 300; color: var(--primary-text); pointer-events: none; transition: color var(--transition-speed); }
+        .control-container:hover .control-button { color: var(--accent-color); transform: scale(1.1); text-shadow: 0 0 10px var(--accent-glow); }
+        .control-container:hover .control-label { color: var(--accent-color); }
+        .control-button.active { color: var(--accent-color); background-color: rgba(166, 124, 255, 0.1); }
+        .control-button.active + .control-label { color: var(--accent-color); font-weight: 400; }
+        
+        #notification { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-200%); background: var(--panel-bg); backdrop-filter: blur(10px); padding: 15px 30px; border-radius: 50px; border: 1px solid var(--panel-border); z-index: 100; display: flex; align-items: center; gap: 15px; font-size: 1.1rem; transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        #notification.show { transform: translateX(-50%) translateY(0); }
+
+        /* 4. Pop-up Panels */
+        #ambience-panel, #scenes-panel, #pomodoro-panel, #todo-panel { bottom: 105px; left: 50%; transform: translateX(-50%); width: auto; }
+        #ambience-panel { display: none; max-width: 500px; width: 90vw; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 20px; }
+        #scenes-panel { display: none; max-width: 580px; width: 90vw; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 15px; }
+        #ambience-panel.active, #scenes-panel.active { display: grid; }
+        
+        .sound-control { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .sound-control .play-pause-btn { font-size: 2rem; width: 50px; height: 50px; display: flex; justify-content: center; align-items: center; }
+        .sound-control .volume-slider { width: 80%; -webkit-appearance: none; appearance: none; height: 5px; background: rgba(255, 255, 255, 0.2); border-radius: 5px; outline: none; transition: all var(--transition-speed); }
+        .sound-control .volume-slider:hover { box-shadow: 0 0 5px var(--accent-glow); }
+        .sound-control .volume-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 15px; height: 15px; background: var(--accent-color); border-radius: 50%; cursor: pointer; }
+        
+        .scene-button { background: rgba(255,255,255,0.05); border: 1px solid var(--panel-border); color: var(--primary-text); padding: 15px; border-radius: 10px; cursor: pointer; text-align: center; transition: all var(--transition-speed); font-size: 0.9em; }
+        .scene-button:hover { background: rgba(166, 124, 255, 0.2); border-color: var(--accent-color); }
+        .scene-button.active { background: var(--accent-color); color: #141928; font-weight: 600; }
+        .scene-button .icon { font-size: 1.5rem; margin-bottom: 5px; }
+
+        #pomodoro-panel { width: 300px; align-items: center; }
+        #pomodoro-timer-visual { position: relative; width: 200px; height: 200px; margin: 10px 0; }
+        #pomodoro-progress-ring { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        #pomodoro-progress-ring circle { transition: stroke-dashoffset 1s linear; }
+        #pomodoro-time { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 3.5em; font-weight: 600; }
+        #pomodoro-session-selector { display: flex; gap: 10px; margin-bottom: 15px; }
+        #pomodoro-session-selector button { background: rgba(255,255,255,0.1); border: 1px solid var(--panel-border); color: var(--primary-text); padding: 5px 12px; border-radius: 5px; cursor: pointer; transition: all var(--transition-speed); }
+        #pomodoro-session-selector button.active { background-color: var(--accent-color); color: #fff; font-weight: 600; }
+        #pomodoro-controls button { background: none; border: 2px solid var(--primary-text); color: var(--primary-text); border-radius: 50px; padding: 8px 18px; margin: 0 5px; cursor: pointer; transition: all 0.3s ease; }
+        #pomodoro-controls button:hover { background: var(--accent-color); border-color: var(--accent-color); }
+        
+        #todo-panel { width: 320px; }
+        #todo-list li { display: flex; align-items: center; padding: 8px 5px; border-bottom: 1px solid var(--panel-border); cursor: pointer; list-style-type: none; }
+        #todo-list li.completed { text-decoration: line-through; opacity: 0.6; }
+        #todo-list li input[type="checkbox"] { margin-right: 10px; accent-color: var(--accent-color); }
+        #todo-list li .delete-task { margin-left: auto; background: none; border: none; color: #ff5555; cursor: pointer; visibility: hidden; }
+        #todo-list li:hover .delete-task { visibility: visible; }
+        #new-task-form { display: flex; gap: 10px; margin-top: 15px; }
+        #new-task-input { flex-grow: 1; background: rgba(0,0,0,0.3); border: 1px solid var(--panel-border); border-radius: 5px; padding: 8px; color: var(--primary-text); }
+        #new-task-input:focus { outline: 1px solid var(--accent-color); }
+        #new-task-form button { background: var(--accent-color); border: none; color: white; padding: 0 15px; border-radius: 5px; cursor: pointer; }
+        
+        /* 5. Responsive Design */
+        @media (max-width: 1200px) {
+            #music-player { display: none; }
+        }
+        @media (max-width: 1024px) {
+            #soundcloud-sidebar { display: none; }
+            #music-player { display: flex; }
+        }
+
+        /* Mobile View Adjustments (768px and below) */
+        @media (max-width: 768px) {
+            body {
+                display: flex;
+                flex-direction: column;
+            }
+            #top-bar { padding: 15px 20px; }
+            #logo { height: 100px; }
+            #time { font-size: 1.5em; }
+            #date { font-size: 0.8em; }
+
+            /* Vertically center the music player */
+            #main-content {
+                display: flex;
+                flex-grow: 1;
+                justify-content: center;
+                align-items: center;
+                overflow-y: auto;
+                padding-bottom: 100px; /* Space for bottom controls */
+            }
+            #music-player {
+                position: relative; /* Overrides fixed position */
+                top: auto; right: auto; bottom: auto;
+                width: 90vw; max-width: 400px;
+            }
+            #youtube-url-form {
+                flex-direction: column; align-items: stretch;
+            }
+            #youtube-url-form button { padding: 10px; }
+
+            #bottom-controls { width: calc(100% - 40px); left: 20px; transform: none; justify-content: space-around; padding: 10px 5px; gap: 0; }
+            .ui-panel { width: 90vw; max-width: 500px; }
+        }
+        
+        @media (max-width: 480px) {
+             #bottom-controls { bottom: 15px; }
+             /* Labels on bottom controls are kept for better UX based on previous fix */
+        }
+    </style>
+</head>
+<body>
+
+    <div id="background-container">
+        <video id="background-video" autoplay muted loop playsinline></video>
+    </div>
+
+    <header id="top-bar">
+        <div id="logo-container">
+            <!-- DEVELOPER: Replace with your logo file path -->
+            <img id="logo" src="logo2.png" alt="Lofi Desk Logo">
+        </div>
+        <div id="datetime">
+            <div id="time"></div>
+            <div id="date"></div>
+        </div>
+    </header>
+
+    <main id="main-content">
+        <!-- SoundCloud Player Sidebar (Left) - Hidden on mobile -->
+        <div id="soundcloud-sidebar" class="ui-panel active">
+            <div id="soundcloud-header" class="panel-header">
+                <h4>SoundCloud Player</h4>
+                <button id="soundcloud-toggle-btn" class="control-button" title="Minimize Player">
+                    <i class="bi bi-chevron-up"></i>
+                </button>
+            </div>
+            <div id="soundcloud-content" class="panel-content">
+                <iframe id="soundcloud-embed" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/545610837&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true"></iframe>
+                <form id="soundcloud-url-form">
+                    <input type="text" id="soundcloud-url-input" placeholder="Paste SoundCloud URL">
+                    <button type="submit">Load</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- YouTube Player -->
+        <div id="music-player" class="ui-panel active">
+            <div id="youtube-header" class="panel-header">
+                <h4>YouTube Player</h4>
+                <button id="youtube-toggle-btn" class="control-button" title="Minimize Player">
+                    <i class="bi bi-chevron-up"></i>
+                </button>
+            </div>
+            <div id="youtube-content" class="panel-content">
+                <iframe id="youtube-embed" src="https://www.youtube.com/embed/jfKfPfyJRdk" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                <form id="youtube-url-form">
+                    <input type="text" id="youtube-url-input" placeholder="Paste YouTube URL">
+                    <button type="submit">Load</button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer id="bottom-controls">
+        <div class="control-container">
+            <button class="control-button" id="scenes-btn"><i class="bi bi-map"></i></button>
+            <span class="control-label">Scenes</span>
+        </div>
+        <div class="control-container">
+            <button class="control-button" id="ambience-btn"><i class="bi bi-earbuds"></i></button>
+            <span class="control-label">Ambience</span>
+        </div>
+        <div class="control-container">
+            <button class="control-button" id="pomodoro-btn"><i class="bi bi-clock"></i></button>
+            <span class="control-label">Timer</span>
+        </div>
+        <div class="control-container">
+            <button class="control-button" id="todo-btn"><i class="bi bi-check2-square"></i></button>
+            <span class="control-label">Tasks</span>
+        </div>
+        <div class="control-container">
+            <button class="control-button" id="fullscreen-btn"><i class="bi bi-arrows-fullscreen"></i></button>
+            <span class="control-label">Fullscreen</span>
+        </div>
+    </footer>
+
+    <!-- Pop-up Panels -->
+    <div id="scenes-panel" class="ui-panel"></div>
+    <div id="ambience-panel" class="ui-panel"></div>
+    <div id="pomodoro-panel" class="ui-panel">
+        <div id="pomodoro-session-selector">
+            <button data-minutes="10">10 min</button>
+            <button data-minutes="25" class="active">25 min</button>
+            <button data-minutes="45">45 min</button>
+        </div>
+        <div id="pomodoro-timer-visual">
+            <svg id="pomodoro-progress-ring" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255, 255, 255, 0.2)" stroke-width="4" />
+                <circle id="pomodoro-progress-circle" cx="60" cy="60" r="54" fill="none" stroke="var(--accent-color)" stroke-width="6" stroke-linecap="round" transform="rotate(-90 60 60)" />
+            </svg>
+            <div id="pomodoro-time">25:00</div>
+        </div>
+        <h3 id="pomodoro-status">Work Session</h3>
+        <div id="pomodoro-controls">
+            <button id="pomo-start-pause">Start</button>
+            <button id="pomo-reset">Reset</button>
+        </div>
+    </div>
+    <div id="todo-panel" class="ui-panel">
+        <h3>My Tasks</h3>
+        <ul id="todo-list"></ul>
+        <form id="new-task-form">
+            <input type="text" id="new-task-input" placeholder="Add a new task..." autocomplete="off">
+            <button type="submit" title="Add Task"><i class="bi bi-plus-lg"></i></button>
+        </form>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification">
+        <span id="notification-icon"></span>
+        <span id="notification-text"></span>
+    </div>
+    <audio id="notification-sound" src="assets/sounds/notification.mp3" preload="auto"></audio>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        /**
+         * Lofi Desk - Main Script
+         * 1. Data Definitions (Scenes, Sounds)
+         * 2. DOM Element Cache
+         * 3. Core Logic (Audio, Scene Switching, Time)
+         * 4. UI Initializers
+         * 5. Event Listeners (Panels, Players, Pomodoro, To-Do)
+         * 6. App Initialization
+        */
+
+        // 1. Data Definitions
+        const scenes = [
+            // Existing Scenes
+            { name: "Lofi Room", icon: "🛋️", bgVideo: "assets/videos/lofi_room.mp4", defaultAmbience: [""] },
+            { name: "Rainy Café", icon: "☕", bgVideo: "assets/videos/cafe.mp4", defaultAmbience: ["keyboard", "library_silence", "raindrop"] },
+            { name: "Forest", icon: "🌲", bgVideo: "assets/videos/forest.mp4", defaultAmbience: ["leaves", "wind", "deep_forest"] },
+            { name: "Ocean", icon: "🌊", bgVideo: "assets/videos/ocean.mp4", defaultAmbience: ["waves", "underwater"] },
+            { name: "Rainy Window", icon: "🌧️", bgVideo: "assets/videos/rainy.mp4", defaultAmbience: ["rain", "thunder", "wind"] },
+            { name: "Sunset Rooftop", icon: "🌇", bgVideo: "assets/videos/sunset_rooftop.mp4", defaultAmbience: ["wind", "cityscape", "wind_chimes"] },
+            { name: "Mountain Ranges", icon: "🏔️", bgVideo: "assets/videos/mountains.mp4", defaultAmbience: ["wind", "bird_in_rainforest"] },
+            { name: "Snowfall", icon: "❄️", bgVideo: "assets/videos/snowfall.mp4", defaultAmbience: ["wind", "walking_snow", "blizzard"] },
+            { name: "Thunderstorm", icon: "⛈️", bgVideo: "assets/videos/thunderstorm.mp4", defaultAmbience: ["thunderstorm", "wind", "rain", "thunder"] },
+            { name: "Starry Night", icon: "🌌", bgVideo: "assets/videos/starry_sky.mp4", defaultAmbience: ["cicadas", "wind", "night_fauna"] },
+            { name: "Campfire Night", icon: "🏕️", bgVideo: "assets/videos/campfire_night.mp4", defaultAmbience: ["campfire", "cicadas", "night_fauna", "crickets"] },
+            { name: "Sunrise Hills", icon: "🌄", bgVideo: "assets/videos/sunrise_hills.mp4", defaultAmbience: ["birds", "deep_forest"] },
+            { name: "Rainy Street Walk", icon: "🚶‍♀️", bgVideo: "assets/videos/rainy_street_walk.mp4", defaultAmbience: ["wind", "street", "cityscape", "raindrop", "library_silence"] },
+            { name: "Night Drive", icon: "🚗", bgVideo: "assets/videos/night_drive.mp4", defaultAmbience: ["street", "wind", "night_fauna"] },
+            // New Scenes
+            { name: "Train Journey", icon: "🚂", bgVideo: "assets/videos/train_journey.mp4", defaultAmbience: ["train", "wind"] },
+            { name: "rainforest", icon: "🌴", bgVideo: "assets/videos/rainforest.mp4", defaultAmbience: ["rainforest", "wind_trees", "water_stream", "raindrop"] },
+            { name: "Tokyo", icon: "🗼", bgVideo: "assets/videos/tokyo_evening.mp4", defaultAmbience: ["wind", "cityscape", "raindrop", "cicadas"] },
+            { name: "Vintage Library", icon: "📚", bgVideo: "assets/videos/library.mp4", defaultAmbience: ["library_silence", "writing", "clock"] },
+            { name: "Morning Time", icon: "☀️", bgVideo: "assets/videos/morning.mp4", defaultAmbience: ["leaves", "morning"] },
+            { name: "Mountain Temple", icon: "🛕", bgVideo: "assets/videos/mountain_temple.mp4", defaultAmbience: ["wind_chimes", "temple_bells", "birds"] },
+            { name: "Sea Beach", icon: "🏖️", bgVideo: "assets/videos/sea_beach.mp4", defaultAmbience: ["seagulls", "wind", "waves"] },
+            { name: "Hacker Vibe", icon: "👩🏻‍💻", bgVideo: "assets/videos/hacker.mp4", defaultAmbience: ["keyboard", "clock"] },
+            { name: "Gamer's Room", icon: "🎮", bgVideo: "assets/videos/gamer_room.mp4", defaultAmbience: ["rain", "keyboard"] },
+            { name: "Cyberpunk Cityscape", icon: "🌃", bgVideo: "assets/videos/cyberpunk_cityscape.mp4", defaultAmbience: ["street", "cityscape", "library_silence", "wind"] }
+        ];
+
+        // Developer can re-order these items to change the display order in the Ambience panel
+                const ambienceSounds = [
+            // Existing Sounds
+            { id: "rain", name: "Rain", icon: "🌧️", src: "assets/sounds/rain2.mp3" },
+            { id: "wind", name: "Wind", icon: "🌬️", src: "assets/sounds/wind.mp3" },
+            { id: "waves", name: "Waves", icon: "🌊", src: "assets/sounds/waves.mp3" },
+            { id: "campfire", name: "Campfire", icon: "🔥", src: "assets/sounds/campfire.mp3" },
+            { id: "thunder", name: "Thunder", icon: "⚡", src: "assets/sounds/thunder.mp3" },
+            { id: "birds", name: "Birds", icon: "🐦", src: "assets/sounds/birds.mp3" },
+            { id: "noise", name: "White Noise", icon: "🎧", src: "assets/sounds/noise.mp3" },
+            { id: "keyboard", name: "Keyboard", icon: "⌨️", src: "assets/sounds/keyboard.mp3" },
+            { id: "crickets", name: "Crickets", icon: "🦗", src: "assets/sounds/crickets.mp3" },
+            { id: "street", name: "Street", icon: "🚗", src: "assets/sounds/street.mp3" },
+            { id: "leaves", name: "Leaves Rustling", icon: "🍂", src: "assets/sounds/leaves.mp3" },
+            { id: "night_fauna", name: "Night Frogs", icon: "🐸", src: "assets/sounds/night_frogs.mp3" },
+            { id: "deep_forest", name: "Deep Forest", icon: "🌳", src: "assets/sounds/deep_forest.mp3" },
+            { id: "underwater", name: "Underwater", icon: "💧", src: "assets/sounds/underwater.mp3" },
+            // New Sounds
+            { id: "wind_chimes", name: "Wind Chimes", icon: "🎐", src: "assets/sounds/wind_chimes.mp3" },
+            { id: "temple_bells", name: "Temple Bells", icon: "🔔", src: "assets/sounds/temple_bells.mp3" },
+            { id: "train", name: "Train Rumble", icon: "🚇", src: "assets/sounds/train.mp3" },
+            { id: "writing", name: "Writing", icon: "✍️", src: "assets/sounds/writing.mp3" },
+            { id: "blizzard", name: "Blizzard", icon: "💨", src: "assets/sounds/blizzard.mp3" },
+            { id: "morning", name: "Morning", icon: "🌄", src: "assets/sounds/morning.mp3" },
+            { id: "cityscape", name: "Cityscape", icon: "🏙️", src: "assets/sounds/cityscape.mp3" },
+            { id: "cat_purring", name: "Cat Purring", icon: "🐈", src: "assets/sounds/cat_purring.mp3" },
+            { id: "library_silence", name: "Library Silence", icon: "🤫", src: "assets/sounds/library.mp3" },
+            { id: "clock", name: "Clock Ticking", icon: "⏰", src: "assets/sounds/clock.mp3" },
+            { id: "cicadas", name: "Cicadas", icon: "🐞", src: "assets/sounds/cicadas.mp3" },
+            { id: "rainforest", name: "Rainforest", icon: "🌴", src: "assets/sounds/rainforest.mp3" },
+            { id: "bird_in_rainforest", name: "Birds in Rainforest", icon: "🦜", src: "assets/sounds/birds_in_rainforest.mp3" },
+            { id: "wind_trees", name: "Wind Through Trees", icon: "🍃", src: "assets/sounds/wind_trees.mp3" },
+            { id: "water_stream", name: "Stream of Water", icon: "🏞️", src: "assets/sounds/water_stream.mp3" },
+            { id: "thunderstorm", name: "Thunderstorm", icon: "⛈️", src: "assets/sounds/thunderstorm.mp3" },
+            { id: "raindrop", name: "Raindrops", icon: "☔", src: "assets/sounds/raindrop.mp3" },
+            { id: "walking_snow", name: "Walking in Snow", icon: "👣", src: "assets/sounds/walking_snow.mp3" },
+            { id: "seagulls", name: "Seagulls", icon: "𓅭", src: "assets/sounds/seagulls.mp3" }
+        ];
+
+        // 2. DOM Element Cache
+        const timeElement = document.getElementById('time');
+        const dateElement = document.getElementById('date');
+        const bgVideo = document.getElementById('background-video');
+        const notificationEl = document.getElementById('notification');
+        const notificationIcon = document.getElementById('notification-icon');
+        const notificationText = document.getElementById('notification-text');
+        const notificationSound = document.getElementById('notification-sound');
+        const audioPlayers = {};
+        let activeFadeIntervals = {};
+
+        // 3. Core Logic
+        // Smoothly fades audio in or out
+        function fadeAudio(audio, direction, duration = 1000) {
+            const soundId = Object.keys(audioPlayers).find(key => audioPlayers[key] === audio);
+            if (activeFadeIntervals[soundId]) clearInterval(activeFadeIntervals[soundId]);
+            const targetVolume = direction === 'in' ? (audio.volumeControl.value || 0.5) : 0;
+            const startVolume = audio.volume;
+            if (startVolume === targetVolume && ((direction === 'in' && !audio.paused) || (direction === 'out' && audio.paused))) return;
+            const step = (targetVolume - startVolume) * 50 / duration;
+            if (direction === 'in' && audio.paused) { audio.volume = 0; audio.play(); }
+            activeFadeIntervals[soundId] = setInterval(() => {
+                let newVolume = audio.volume + step;
+                if ((step > 0 && newVolume >= targetVolume) || (step < 0 && newVolume <= targetVolume)) {
+                    newVolume = targetVolume;
+                    clearInterval(activeFadeIntervals[soundId]);
+                    if (direction === 'out') audio.pause();
+                }
+                audio.volume = newVolume;
+            }, 50);
+        }
+
+        // Updates the clock and date display
+        function updateDateTime() {
+            const now = new Date();
+            timeElement.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+            dateElement.textContent = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+        }
+
+        // Changes the background video and default ambient sounds
+        function switchScene(index) {
+            const scene = scenes[index];
+            bgVideo.style.opacity = '0';
+            setTimeout(() => {
+                bgVideo.src = scene.bgVideo;
+                bgVideo.load();
+                bgVideo.play().catch(error => console.error("Video autoplay was prevented.", error));
+                bgVideo.style.opacity = '1';
+            }, 800);
+            document.querySelectorAll('.scene-button').forEach(b => b.classList.remove('active'));
+            document.querySelector(`.scene-button[data-index='${index}']`).classList.add('active');
+            Object.keys(audioPlayers).forEach(id => {
+                const btn = document.querySelector(`.play-pause-btn[data-sound='${id}']`);
+                if(!btn) return;
+                const isPlaying = btn.classList.contains('active');
+                const shouldPlay = scene.defaultAmbience.includes(id);
+                if (isPlaying && !shouldPlay) btn.click();
+                else if (!isPlaying && shouldPlay) btn.click();
+            });
+        }
+        
+        // Toggles the browser's fullscreen mode
+        function toggleFullscreen() {
+            const btnIcon = document.querySelector('#fullscreen-btn i');
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+                btnIcon.classList.replace('bi-arrows-fullscreen', 'bi-fullscreen-exit');
+            } else {
+                document.exitFullscreen();
+                btnIcon.classList.replace('bi-fullscreen-exit', 'bi-arrows-fullscreen');
+            }
+        }
+        
+        // Displays a temporary notification at the top of the screen
+        function showNotification(text, icon) {
+            notificationText.textContent = text; notificationIcon.textContent = icon;
+            notificationEl.classList.add('show');
+            notificationSound.play().catch(e => console.error("Error playing sound:", e));
+            setTimeout(() => notificationEl.classList.remove('show'), 4000);
+        }
+
+        // 4. UI Initializers
+        // Populates the scenes panel with buttons
+        function initScenes() {
+            const scenesPanel = document.getElementById('scenes-panel');
+            scenes.forEach((scene, index) => {
+                const button = document.createElement('button');
+                button.className = 'scene-button'; button.dataset.index = index;
+                button.innerHTML = `<div class="icon">${scene.icon}</div><div>${scene.name}</div>`;
+                button.addEventListener('click', () => switchScene(index));
+                scenesPanel.appendChild(button);
+            });
+        }
+        
+        // Populates the ambience panel with sound controls
+        function initAmbience() {
+            const ambiencePanel = document.getElementById('ambience-panel');
+            // FIX: Removed alphabetical sort to respect the order defined in the data array
+            ambienceSounds.forEach(sound => {
+                const audio = new Audio(sound.src); audio.loop = true; audioPlayers[sound.id] = audio;
+                const control = document.createElement('div');
+                control.className = 'sound-control';
+                control.innerHTML = `<button class="control-button play-pause-btn" data-sound="${sound.id}" title="${sound.name}">${sound.icon}</button><input type="range" class="volume-slider" data-sound="${sound.id}" min="0" max="1" step="0.01" value="0.5">`;
+                ambiencePanel.appendChild(control);
+                const playBtn = control.querySelector('.play-pause-btn');
+                const volumeSlider = control.querySelector('.volume-slider');
+                audio.volumeControl = volumeSlider;
+                playBtn.addEventListener('click', () => {
+                    playBtn.classList.toggle('active');
+                    if (playBtn.classList.contains('active')) fadeAudio(audio, 'in');
+                    else fadeAudio(audio, 'out');
+                });
+                volumeSlider.addEventListener('input', () => { if (!audio.paused) audio.volume = volumeSlider.value; });
+            });
+        }
+        
+        // 5. Event Listeners
+        // Logic for toggling the main control panels (Scenes, Ambience, etc.)
+        const panels = {
+            scenes: { btn: document.getElementById('scenes-btn'), panel: document.getElementById('scenes-panel') },
+            ambience: { btn: document.getElementById('ambience-btn'), panel: document.getElementById('ambience-panel') },
+            pomodoro: { btn: document.getElementById('pomodoro-btn'), panel: document.getElementById('pomodoro-panel') },
+            todo: { btn: document.getElementById('todo-btn'), panel: document.getElementById('todo-panel') }
+        };
+        Object.values(panels).forEach(item => {
+            item.btn.addEventListener('click', () => {
+                const isActive = item.panel.classList.contains('active');
+                Object.values(panels).forEach(p => { p.panel.classList.remove('active'); p.btn.classList.remove('active'); });
+                if (!isActive) { item.panel.classList.add('active'); item.btn.classList.add('active'); }
+            });
+        });
+
+        // Music Player Listeners (Minimize and URL loading)
+        document.getElementById('soundcloud-header').addEventListener('click', (e) => {
+            if (e.target.closest('#soundcloud-content')) return;
+            document.getElementById('soundcloud-sidebar').classList.toggle('minimized');
+        });
+        document.getElementById('soundcloud-url-form').addEventListener('submit', (e) => {
+            e.preventDefault(); 
+            const input = document.getElementById('soundcloud-url-input');
+            const url = input.value.trim(); if (!url) return;
+            document.getElementById('soundcloud-embed').src = `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%23a67cff&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true`;
+            input.value = '';
+        });
+        document.getElementById('youtube-header').addEventListener('click', (e) => {
+             if (e.target.closest('#youtube-content')) return;
+             document.getElementById('music-player').classList.toggle('minimized');
+        });
+        document.getElementById('youtube-url-form').addEventListener('submit', (e) => {
+            e.preventDefault(); 
+            const input = document.getElementById('youtube-url-input');
+            const url = input.value.trim(); if (!url) return;
+            let embedUrl = '';
+            try {
+                const urlObj = new URL(url); let videoId = urlObj.searchParams.get('v'); const listId = urlObj.searchParams.get('list');
+                if (urlObj.hostname.includes('youtu.be')) videoId = urlObj.pathname.slice(1);
+                if(listId) embedUrl = `https://www.youtube.com/embed/videoseries?list=${listId}`;
+                else if (videoId) embedUrl = `https://www.youtube.com/embed/${videoId}`;
+                if (embedUrl) { document.getElementById('youtube-embed').src = embedUrl; input.value = ''; }
+                else { alert('Invalid YouTube URL.'); }
+            } catch { alert('Could not parse the URL.'); }
+        });
+
+        // Pomodoro Timer Logic
+        const pomoTimeEl = document.getElementById('pomodoro-time');
+        const pomoStatusEl = document.getElementById('pomodoro-status');
+        const pomoStartPauseBtn = document.getElementById('pomo-start-pause');
+        const pomoResetBtn = document.getElementById('pomo-reset');
+        const pomoSessionSelector = document.getElementById('pomodoro-session-selector');
+        const progressCircle = document.getElementById('pomodoro-progress-circle');
+        const radius = progressCircle.r.baseVal.value; const circumference = 2 * Math.PI * radius;
+        progressCircle.style.strokeDasharray = `${circumference} ${circumference}`; progressCircle.style.strokeDashoffset = circumference;
+        let pomoInterval, workDuration = 25, breakDuration = 5, pomoMinutes = workDuration, pomoSeconds = 0, isPomoRunning = false, isBreak = false;
+        const updatePomoDisplay = () => {
+            pomoTimeEl.textContent = `${String(pomoMinutes).padStart(2, '0')}:${String(pomoSeconds).padStart(2, '0')}`;
+            const totalSeconds = (isBreak ? breakDuration : workDuration) * 60; const elapsedSeconds = totalSeconds - (pomoMinutes * 60 + pomoSeconds);
+            progressCircle.style.strokeDashoffset = circumference - ((elapsedSeconds / totalSeconds) * circumference);
+        };
+        const pausePomo = () => { isPomoRunning = false; pomoStartPauseBtn.textContent = 'Start'; clearInterval(pomoInterval); };
+        const resetPomo = () => { pausePomo(); isBreak = false; pomoMinutes = workDuration; pomoSeconds = 0; pomoStatusEl.textContent = 'Work Session'; updatePomoDisplay(); };
+        function startPomo() {
+            isPomoRunning = true; pomoStartPauseBtn.textContent = 'Pause';
+            pomoInterval = setInterval(() => {
+                if (--pomoSeconds < 0) { pomoSeconds = 59; pomoMinutes--; }
+                if (pomoMinutes < 0) {
+                    clearInterval(pomoInterval); isBreak = !isBreak;
+                    if (isBreak) { showNotification("Time for a short break!", "☕"); pomoMinutes = breakDuration; pomoStatusEl.textContent = 'Break Time!'; } 
+                    else { showNotification("Let's get back to focus!", "🎯"); pomoMinutes = workDuration; pomoStatusEl.textContent = 'Work Session'; }
+                    pomoSeconds = 0; startPomo();
+                }
+                updatePomoDisplay();
+            }, 1000);
+        }
+        pomoStartPauseBtn.addEventListener('click', () => isPomoRunning ? pausePomo() : startPomo());
+        pomoResetBtn.addEventListener('click', resetPomo);
+        pomoSessionSelector.addEventListener('click', (e) => {
+            if(e.target.tagName === 'BUTTON') {
+                workDuration = parseInt(e.target.dataset.minutes, 10);
+                pomoSessionSelector.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+                breakDuration = (workDuration > 10) ? 5 : 2; resetPomo();
+            }
+        });
+        
+        // To-Do List Logic (with localStorage)
+        const todoList = document.getElementById('todo-list');
+        const newTaskForm = document.getElementById('new-task-form');
+        const newTaskInput = document.getElementById('new-task-input');
+        let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+        function saveTasks() { localStorage.setItem('tasks', JSON.stringify(tasks)); }
+        function renderTasks() {
+            todoList.innerHTML = tasks.length === 0 ? '<li style="opacity:0.5; justify-content:center; border:none; cursor:default;">No tasks yet!</li>' : '';
+            tasks.forEach((task, index) => {
+                const li = document.createElement('li');
+                li.className = task.completed ? 'completed' : '';
+                li.innerHTML = `<input type="checkbox" ${task.completed ? 'checked' : ''} data-index="${index}"><span>${task.text}</span><button class="delete-task" data-index="${index}" title="Delete Task"><i class="bi bi-trash"></i></button>`;
+                todoList.appendChild(li);
+            });
+        }
+        newTaskForm.addEventListener('submit', (e) => { e.preventDefault(); const text = newTaskInput.value.trim(); if (text) { tasks.push({ text: text, completed: false }); newTaskInput.value = ''; saveTasks(); renderTasks(); } });
+        todoList.addEventListener('click', (e) => {
+            const checkbox = e.target.closest('input[type="checkbox"]'); const deleteBtn = e.target.closest('.delete-task');
+            if (checkbox) { tasks[checkbox.dataset.index].completed = checkbox.checked; } 
+            else if (deleteBtn) { tasks.splice(deleteBtn.dataset.index, 1); } 
+            else { const li = e.target.closest('li'); if(li && li.querySelector('input')) { const cb = li.querySelector('input'); cb.checked = !cb.checked; tasks[cb.dataset.index].completed = cb.checked; } }
+            saveTasks(); renderTasks(); 
+        });
+
+        // 6. App Initialization
+        initScenes();
+        initAmbience();
+        renderTasks();
+        updatePomoDisplay();
+        setInterval(updateDateTime, 1000);
+        updateDateTime();
+        document.getElementById('fullscreen-btn').addEventListener('click', toggleFullscreen);
+        switchScene(0); // Load default scene on start
+    });
+    </script>
+</body>
+</html>
