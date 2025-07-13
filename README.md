@@ -1,4 +1,4 @@
-#Lofi Desk
+#**Lofi Desk**
 
 Create your perfect digital space for focus and relaxation. Lofi Desk is an interactive, browser-based application designed to enhance your work or study sessions with customizable ambient scenes, integrated music players, and productivity tools.
 
