@@ -21,7 +21,7 @@
          * 1. Base & Theming
          * 2. Core Layout (Background, Header, Main, Footer)
          * 3. UI Components (Panels, Buttons, Players)
-         * 4. Pop-up Panels (Scenes, Ambience, Pomodoro, To-Do)
+         * 4. Pop-up Panels (Scenes, Ambience, Pomodoro, To-Do, About)
          * 5. Responsive Design
         */
 
@@ -148,7 +148,9 @@
         #notification.show { transform: translateX(-50%) translateY(0); }
 
         /* 4. Pop-up Panels */
-        #ambience-panel, #scenes-panel, #pomodoro-panel, #todo-panel { bottom: 105px; left: 50%; transform: translateX(-50%); width: auto; }
+        #ambience-panel, #scenes-panel, #pomodoro-panel, #todo-panel, #about-panel { 
+            bottom: 105px; left: 50%; transform: translateX(-50%); width: auto; 
+        }
         #ambience-panel { display: none; max-width: 500px; width: 90vw; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 20px; }
         #scenes-panel { display: none; max-width: 580px; width: 90vw; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 15px; }
         #ambience-panel.active, #scenes-panel.active { display: grid; }
@@ -186,6 +188,24 @@
         #new-task-input:focus { outline: 1px solid var(--accent-color); }
         #new-task-form button { background: var(--accent-color); border: none; color: white; padding: 0 15px; border-radius: 5px; cursor: pointer; }
         
+        #about-panel {
+            width: 380px;
+            align-items: center;
+            text-align: center;
+        }
+        #about-panel h3 {
+            margin-bottom: 10px;
+            font-weight: 600;
+            font-size: 1.2em;
+            color: var(--accent-color);
+        }
+        #about-panel p {
+            line-height: 1.7;
+            font-size: 0.9em;
+            font-weight: 300;
+        }
+
+
         /* 5. Responsive Design */
         @media (max-width: 1200px) {
             #music-player { display: none; }
@@ -306,6 +326,10 @@
             <span class="control-label">Tasks</span>
         </div>
         <div class="control-container">
+            <button class="control-button" id="about-btn"><i class="bi bi-info-circle"></i></button>
+            <span class="control-label">About</span>
+        </div>
+        <div class="control-container">
             <button class="control-button" id="fullscreen-btn"><i class="bi bi-arrows-fullscreen"></i></button>
             <span class="control-label">Fullscreen</span>
         </div>
@@ -341,6 +365,28 @@
             <button type="submit" title="Add Task"><i class="bi bi-plus-lg"></i></button>
         </form>
     </div>
+    <div id="about-panel" class="ui-panel">
+        <h3>About Lofi Desk</h3>
+        <p>
+            Lofi Desk is your personal sanctuary for focus and relaxation. We believe that the right atmosphere can transform your work, study, or chill sessions.
+            <br><br>
+            <br>💡 What We Offer:<br>
+🎧 YouTube & SoundCloud music players<br>
+
+🌆 Animated ambient scenes<br>
+
+🎚️ Custom sound sliders for a personal vibe<br>
+
+⏲️ Focus timers & task checklists<br>
+
+🔒 100% ad-free, no login needed<br>
+<br>🌌 Our Mission:
+<br>To build a digital space that encourages mindfulness, deep work, and creativity — anytime, anywhere.<br>
+            <br><br>
+            👨‍💻 Lofi Desk is built and curated by <strong> <b> SHIVAM TALUKDAR </b> </strong>, a passionate developer and creative mind behind this immersive focus experience.
+        </p>
+    </div>
+
 
     <!-- Notification -->
     <div id="notification">
@@ -552,7 +598,8 @@
             scenes: { btn: document.getElementById('scenes-btn'), panel: document.getElementById('scenes-panel') },
             ambience: { btn: document.getElementById('ambience-btn'), panel: document.getElementById('ambience-panel') },
             pomodoro: { btn: document.getElementById('pomodoro-btn'), panel: document.getElementById('pomodoro-panel') },
-            todo: { btn: document.getElementById('todo-btn'), panel: document.getElementById('todo-panel') }
+            todo: { btn: document.getElementById('todo-btn'), panel: document.getElementById('todo-panel') },
+            about: { btn: document.getElementById('about-btn'), panel: document.getElementById('about-panel') }
         };
         Object.values(panels).forEach(item => {
             item.btn.addEventListener('click', () => {
