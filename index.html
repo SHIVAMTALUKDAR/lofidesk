@@ -148,7 +148,7 @@
         #notification.show { transform: translateX(-50%) translateY(0); }
 
         /* 4. Pop-up Panels */
-        #ambience-panel, #scenes-panel, #pomodoro-panel, #todo-panel, #about-panel { 
+        #ambience-panel, #scenes-panel, #pomodoro-panel, #alarm-panel, #todo-panel, #about-panel { 
             bottom: 105px; left: 50%; transform: translateX(-50%); width: auto; 
         }
         #ambience-panel { display: none; max-width: 500px; width: 90vw; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 20px; }
@@ -177,6 +177,7 @@
         #pomodoro-controls button { background: none; border: 2px solid var(--primary-text); color: var(--primary-text); border-radius: 50px; padding: 8px 18px; margin: 0 5px; cursor: pointer; transition: all 0.3s ease; }
         #pomodoro-controls button:hover { background: var(--accent-color); border-color: var(--accent-color); }
         
+        #alarm-panel { width: 350px; align-items: stretch; }
         #todo-panel { width: 320px; }
         #todo-list li { display: flex; align-items: center; padding: 8px 5px; border-bottom: 1px solid var(--panel-border); cursor: pointer; list-style-type: none; }
         #todo-list li.completed { text-decoration: line-through; opacity: 0.6; }
@@ -253,6 +254,131 @@
              #bottom-controls { bottom: 15px; }
              /* Labels on bottom controls are kept for better UX based on previous fix */
         }
+
+        /* --- Sticky Notes --- */
+        #sticky-notes-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 12;
+        }
+        .sticky-note {
+            position: absolute; width: 220px; min-height: 150px;
+            border-radius: 12px; pointer-events: auto;
+            display: flex; flex-direction: column;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            transition: box-shadow var(--transition-speed) ease;
+            overflow: hidden; z-index: 12;
+        }
+        .sticky-note:hover { box-shadow: 0 12px 40px rgba(0,0,0,0.5); }
+        .sticky-note-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 12px; cursor: grab;
+            background: rgba(0,0,0,0.12); user-select: none;
+        }
+        .sticky-note-header:active { cursor: grabbing; }
+        .sticky-note-header .note-actions { display: flex; gap: 6px; }
+        .sticky-note-header .note-action-btn {
+            background: none; border: none; color: inherit; cursor: pointer;
+            font-size: 0.85rem; opacity: 0.5; transition: opacity 0.2s; padding: 2px;
+        }
+        .sticky-note-header .note-action-btn:hover { opacity: 1; }
+        .sticky-note-body {
+            flex-grow: 1; padding: 12px; outline: none;
+            font-family: var(--font-family); font-size: 0.85em;
+            line-height: 1.6; min-height: 100px; overflow-y: auto;
+            word-wrap: break-word;
+        }
+        .note-color-picker {
+            display: none; position: absolute; top: 36px; right: 8px;
+            background: rgba(20,25,40,0.95); backdrop-filter: blur(10px);
+            border-radius: 8px; padding: 8px; gap: 6px; flex-wrap: wrap;
+            width: 120px; z-index: 15; border: 1px solid var(--panel-border);
+        }
+        .note-color-picker.show { display: flex; }
+        .note-color-swatch {
+            width: 24px; height: 24px; border-radius: 50%;
+            border: 2px solid transparent; cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .note-color-swatch:hover { transform: scale(1.2); border-color: rgba(255,255,255,0.8); }
+
+        /* --- Weather Widget --- */
+        #top-right { display: flex; align-items: center; gap: 15px; }
+        #weather-widget {
+            display: flex; align-items: center; gap: 10px;
+            background: var(--panel-bg); backdrop-filter: blur(10px);
+            border: 1px solid var(--panel-border); border-radius: 50px;
+            padding: 8px 16px; cursor: pointer;
+            transition: all var(--transition-speed) ease; position: relative;
+        }
+        #weather-widget:hover { background: rgba(30, 35, 55, 0.7); border-color: var(--accent-color); }
+        #weather-icon { font-size: 1.4em; line-height: 1; }
+        #weather-temp { font-size: 1em; font-weight: 600; }
+        #weather-city { font-size: 0.7em; font-weight: 300; opacity: 0.8; }
+        #weather-details {
+            display: none; position: absolute; top: calc(100% + 10px); right: 0;
+            background: var(--panel-bg); backdrop-filter: blur(15px);
+            border: 1px solid var(--panel-border); border-radius: 15px;
+            padding: 20px; min-width: 250px; z-index: 25;
+            animation: fadeIn 0.3s ease-out;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.37);
+        }
+        #weather-details.show { display: block; }
+        #weather-details h4 { margin-bottom: 12px; font-weight: 400; color: var(--accent-color); font-size: 0.95em; }
+        .weather-detail-row {
+            display: flex; justify-content: space-between;
+            padding: 6px 0; border-bottom: 1px solid var(--panel-border);
+            font-size: 0.85em;
+        }
+        .weather-detail-row:last-of-type { border-bottom: none; }
+        .weather-search { display: flex; gap: 8px; margin-top: 12px; }
+        .weather-search input {
+            flex-grow: 1; background: rgba(0,0,0,0.3);
+            border: 1px solid var(--panel-border); border-radius: 5px;
+            padding: 6px 10px; color: var(--primary-text);
+            font-size: 0.8em; font-family: var(--font-family);
+        }
+        .weather-search input:focus { outline: 1px solid var(--accent-color); }
+        .weather-search button {
+            background: var(--accent-color); border: none; color: white;
+            padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 0.8em;
+        }
+
+        /* --- Audio Visualizer --- */
+        #visualizer-canvas {
+            position: fixed; 
+            bottom: 110px; 
+            left: 50%; 
+            transform: translateX(-50%);
+            width: 80%; 
+            max-width: 500px; 
+            height: 120px;
+            z-index: 10; 
+            pointer-events: none; 
+            opacity: 1;
+            transition: opacity 0.5s ease;
+        }
+        #visualizer-canvas.hidden { opacity: 0; }
+
+        /* --- Mobile Performance & New Feature Responsive --- */
+        @media (max-width: 768px) {
+            .sticky-note, #notes-container { display: none !important; }
+            #weather-details { right: 0; left: auto; min-width: 200px; max-width: calc(100vw - 30px); padding: 15px; }
+            #visualizer-canvas { height: 80px; bottom: 90px; width: 90vw; }
+            .ui-panel, #bottom-controls, #weather-widget, #notification { backdrop-filter: blur(8px); }
+            #bottom-controls .control-button { width: 44px; height: 44px; font-size: 1.4rem; }
+            .control-label { font-size: 0.6rem; }
+            #weather-widget { padding: 5px 8px; gap: 5px; }
+            #background-video { will-change: opacity; }
+        }
+        @media (max-width: 480px) {
+            #weather-icon { font-size: 1.1em; }
+            #weather-temp { font-size: 0.85em; }
+            #weather-city { display: none; }
+            #weather-details { right: -10px; max-width: 95vw; }
+            #bottom-controls .control-button { width: 40px; height: 40px; font-size: 1.3rem; }
+            .control-label { font-size: 0.55rem; }
+            #bottom-controls { gap: 0; padding: 8px 5px; }
+        }
     </style>
 </head>
 <body>
@@ -266,9 +392,29 @@
             <!-- DEVELOPER: Replace with your logo file path -->
             <img id="logo" src="logo2.png" alt="Lofi Desk Logo">
         </div>
-        <div id="datetime">
-            <div id="time"></div>
-            <div id="date"></div>
+        <div id="top-right">
+            <div id="weather-widget" title="Click for details">
+                <span id="weather-icon">🌤️</span>
+                <div>
+                    <div id="weather-temp">--°C</div>
+                    <div id="weather-city">Loading...</div>
+                </div>
+                <div id="weather-details">
+                    <h4>☁️ Weather Details</h4>
+                    <div class="weather-detail-row"><span>Feels Like</span><span id="weather-feels">--°C</span></div>
+                    <div class="weather-detail-row"><span>Humidity</span><span id="weather-humidity">--%</span></div>
+                    <div class="weather-detail-row"><span>Wind Speed</span><span id="weather-wind">-- km/h</span></div>
+                    <div class="weather-detail-row"><span>Condition</span><span id="weather-condition">--</span></div>
+                    <div class="weather-search">
+                        <input type="text" id="weather-city-input" placeholder="Search city...">
+                        <button id="weather-search-btn">Go</button>
+                    </div>
+                </div>
+            </div>
+            <div id="datetime">
+                <div id="time"></div>
+                <div id="date"></div>
+            </div>
         </div>
     </header>
 
@@ -282,7 +428,7 @@
                 </button>
             </div>
             <div id="soundcloud-content" class="panel-content">
-                <iframe id="soundcloud-embed" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/545610837&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true"></iframe>
+                <iframe id="soundcloud-embed" loading="lazy" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/545610837&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true"></iframe>
                 <form id="soundcloud-url-form">
                     <input type="text" id="soundcloud-url-input" placeholder="Paste SoundCloud URL">
                     <button type="submit">Load</button>
@@ -299,7 +445,7 @@
                 </button>
             </div>
             <div id="youtube-content" class="panel-content">
-                <iframe id="youtube-embed" src="https://www.youtube.com/embed/rFZHOHl-L8A?si=k4Na7y7Eu34j63I9" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                <iframe id="youtube-embed" loading="lazy" src="https://www.youtube.com/embed/rFZHOHl-L8A?si=k4Na7y7Eu34j63I9" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                 <form id="youtube-url-form">
                     <input type="text" id="youtube-url-input" placeholder="Paste YouTube URL">
                     <button type="submit">Load</button>
@@ -307,6 +453,8 @@
             </div>
         </div>
     </main>
+
+    <canvas id="visualizer-canvas" class="hidden"></canvas>
 
     <footer id="bottom-controls">
         <div class="control-container">
@@ -322,8 +470,20 @@
             <span class="control-label">Timer</span>
         </div>
         <div class="control-container">
+            <button class="control-button" id="alarm-btn"><i class="bi bi-bell"></i></button>
+            <span class="control-label">Alarms</span>
+        </div>
+        <div class="control-container">
             <button class="control-button" id="todo-btn"><i class="bi bi-check2-square"></i></button>
             <span class="control-label">Tasks</span>
+        </div>
+        <div class="control-container" id="notes-container">
+            <button class="control-button" id="notes-btn" title="Add a Sticky Note"><i class="bi bi-sticky"></i></button>
+            <span class="control-label">Notes</span>
+        </div>
+        <div class="control-container">
+            <button class="control-button" id="visualizer-btn" title="Toggle Visualizer"><i class="bi bi-soundwave"></i></button>
+            <span class="control-label">Visualizer</span>
         </div>
         <div class="control-container">
             <button class="control-button" id="about-btn"><i class="bi bi-info-circle"></i></button>
@@ -356,6 +516,15 @@
             <button id="pomo-start-pause">Start</button>
             <button id="pomo-reset">Reset</button>
         </div>
+    </div>
+    <div id="alarm-panel" class="ui-panel">
+        <h3 style="margin-bottom: 15px; color: var(--accent-color); text-align: center;">⏰ Reminders</h3>
+        <form id="new-alarm-form" style="display: flex; gap: 5px; margin-bottom: 15px;">
+            <input type="time" id="alarm-time-input" required style="background: rgba(0,0,0,0.3); border: 1px solid var(--panel-border); border-radius: 5px; padding: 5px; color: var(--primary-text); font-size: 0.8em; flex: 1;">
+            <input type="text" id="alarm-text-input" placeholder="Message" required style="background: rgba(0,0,0,0.3); border: 1px solid var(--panel-border); border-radius: 5px; padding: 5px; color: var(--primary-text); font-size: 0.8em; flex: 2;">
+            <button type="submit" style="background: var(--accent-color); border: none; color: white; padding: 5px 8px; border-radius: 5px; cursor: pointer; font-size: 0.8em;">Add</button>
+        </form>
+        <ul id="alarm-list" style="max-height: 150px; overflow-y: auto; padding-right: 5px; list-style: none;"></ul>
     </div>
     <div id="todo-panel" class="ui-panel">
         <h3>My Tasks</h3>
@@ -394,6 +563,9 @@
         <span id="notification-text"></span>
     </div>
     <audio id="notification-sound" src="assets/sounds/notification.mp3" preload="auto"></audio>
+
+    <!-- Sticky Notes Layer -->
+    <div id="sticky-notes-container"></div>
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -486,6 +658,9 @@
         const notificationSound = document.getElementById('notification-sound');
         const audioPlayers = {};
         let activeFadeIntervals = {};
+        const isMobile = window.matchMedia('(max-width: 768px)').matches;
+        let audioCtx, analyser, audioSources = {};
+        let visualizerActive = false, animFrameId;
 
         // 3. Core Logic
         // Smoothly fades audio in or out
@@ -513,6 +688,25 @@
             const now = new Date();
             timeElement.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
             dateElement.textContent = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+            
+            // Check alarms
+            if (typeof alarms !== 'undefined') {
+                const hr = String(now.getHours()).padStart(2, '0');
+                const min = String(now.getMinutes()).padStart(2, '0');
+                const currentTimeStr = `${hr}:${min}`;
+                
+                let updated = false;
+                alarms.forEach(alarm => {
+                    if (alarm.time === currentTimeStr && !alarm.triggered) {
+                        alarm.triggered = true; updated = true;
+                        showNotification(`⏰ Reminder: ${alarm.text}`, '🔔');
+                    }
+                    if (alarm.time !== currentTimeStr && alarm.triggered) {
+                        alarm.triggered = false; updated = true;
+                    }
+                });
+                if (updated) saveAlarms();
+            }
         }
 
         // Changes the background video and default ambient sounds
@@ -570,12 +764,20 @@
             });
         }
         
-        // Populates the ambience panel with sound controls
+        // Populates the ambience panel with sound controls (mobile-optimized with lazy loading)
         function initAmbience() {
             const ambiencePanel = document.getElementById('ambience-panel');
             // FIX: Removed alphabetical sort to respect the order defined in the data array
             ambienceSounds.forEach(sound => {
-                const audio = new Audio(sound.src); audio.loop = true; audioPlayers[sound.id] = audio;
+                const audio = new Audio();
+                audio.loop = true;
+                if (isMobile) {
+                    audio.preload = 'none';
+                    audio._lazySrc = sound.src;
+                } else {
+                    audio.src = sound.src;
+                }
+                audioPlayers[sound.id] = audio;
                 const control = document.createElement('div');
                 control.className = 'sound-control';
                 control.innerHTML = `<button class="control-button play-pause-btn" data-sound="${sound.id}" title="${sound.name}">${sound.icon}</button><input type="range" class="volume-slider" data-sound="${sound.id}" min="0" max="1" step="0.01" value="0.5">`;
@@ -584,6 +786,12 @@
                 const volumeSlider = control.querySelector('.volume-slider');
                 audio.volumeControl = volumeSlider;
                 playBtn.addEventListener('click', () => {
+                    // Lazy load audio on mobile — only fetch when first played
+                    if (audio._lazySrc) { audio.src = audio._lazySrc; delete audio._lazySrc; }
+                    // Connect to Web Audio API visualizer if active
+                    if (audioCtx && !audioSources[sound.id]) {
+                        try { const s = audioCtx.createMediaElementSource(audio); s.connect(analyser); audioSources[sound.id] = s; } catch(e) {}
+                    }
                     playBtn.classList.toggle('active');
                     if (playBtn.classList.contains('active')) fadeAudio(audio, 'in');
                     else fadeAudio(audio, 'out');
@@ -598,6 +806,7 @@
             scenes: { btn: document.getElementById('scenes-btn'), panel: document.getElementById('scenes-panel') },
             ambience: { btn: document.getElementById('ambience-btn'), panel: document.getElementById('ambience-panel') },
             pomodoro: { btn: document.getElementById('pomodoro-btn'), panel: document.getElementById('pomodoro-panel') },
+            alarm: { btn: document.getElementById('alarm-btn'), panel: document.getElementById('alarm-panel') },
             todo: { btn: document.getElementById('todo-btn'), panel: document.getElementById('todo-panel') },
             about: { btn: document.getElementById('about-btn'), panel: document.getElementById('about-panel') }
         };
@@ -705,14 +914,377 @@
             saveTasks(); renderTasks(); 
         });
 
+        // --- UTILITY: Debounce ---
+        function debounce(fn, delay) {
+            let t; return function(...a) { clearTimeout(t); t = setTimeout(() => fn.apply(this, a), delay); };
+        }
+
+        // ============================================================
+        //  NEW FEATURE: Weather Widget (Open-Meteo API, no key needed)
+        // ============================================================
+        const WEATHER_CODES = {
+            0:{d:'Clear sky',e:'☀️'},1:{d:'Mainly clear',e:'🌤️'},2:{d:'Partly cloudy',e:'⛅'},3:{d:'Overcast',e:'☁️'},
+            45:{d:'Foggy',e:'🌫️'},48:{d:'Rime fog',e:'🌫️'},51:{d:'Light drizzle',e:'🌦️'},53:{d:'Moderate drizzle',e:'🌦️'},
+            55:{d:'Dense drizzle',e:'🌧️'},61:{d:'Slight rain',e:'🌧️'},63:{d:'Moderate rain',e:'🌧️'},65:{d:'Heavy rain',e:'🌧️'},
+            71:{d:'Slight snow',e:'🌨️'},73:{d:'Moderate snow',e:'🌨️'},75:{d:'Heavy snow',e:'❄️'},77:{d:'Snow grains',e:'❄️'},
+            80:{d:'Slight showers',e:'🌦️'},81:{d:'Moderate showers',e:'🌧️'},82:{d:'Violent showers',e:'🌧️'},
+            85:{d:'Snow showers',e:'🌨️'},86:{d:'Heavy snow showers',e:'❄️'},
+            95:{d:'Thunderstorm',e:'⛈️'},96:{d:'T-storm + hail',e:'⛈️'},99:{d:'Severe t-storm',e:'⛈️'}
+        };
+        function getWeatherInfo(code) { return WEATHER_CODES[code] || {d:'Unknown',e:'🌤️'}; }
+
+        async function fetchWeather(lat, lon, cityName = '') {
+            try {
+                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m`);
+                const data = await res.json();
+                const c = data.current;
+                const info = getWeatherInfo(c.weather_code);
+                document.getElementById('weather-icon').textContent = info.e;
+                document.getElementById('weather-temp').textContent = Math.round(c.temperature_2m) + '°C';
+                document.getElementById('weather-city').textContent = cityName || 'Your Location';
+                document.getElementById('weather-feels').textContent = Math.round(c.apparent_temperature) + '°C';
+                document.getElementById('weather-humidity').textContent = c.relative_humidity_2m + '%';
+                document.getElementById('weather-wind').textContent = Math.round(c.wind_speed_10m) + ' km/h';
+                document.getElementById('weather-condition').textContent = info.d;
+            } catch(e) {
+                document.getElementById('weather-temp').textContent = '--°C';
+                document.getElementById('weather-city').textContent = 'Unavailable';
+            }
+        }
+        async function searchWeatherCity(name) {
+            try {
+                const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=en&format=json`);
+                const data = await res.json();
+                if (data.results && data.results.length) {
+                    const c = data.results[0];
+                    fetchWeather(c.latitude, c.longitude, c.name);
+                    localStorage.setItem('weatherCity', JSON.stringify({name:c.name, lat:c.latitude, lon:c.longitude}));
+                }
+            } catch(e) { console.error('City search failed:', e); }
+        }
+        function initWeather() {
+            const saved = JSON.parse(localStorage.getItem('weatherCity'));
+            if (saved) { fetchWeather(saved.lat, saved.lon, saved.name); }
+            else if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    pos => fetchWeather(pos.coords.latitude, pos.coords.longitude),
+                    () => fetchWeather(28.6139, 77.2090, 'New Delhi')
+                );
+            } else { fetchWeather(28.6139, 77.2090, 'New Delhi'); }
+
+            document.getElementById('weather-widget').addEventListener('click', (e) => {
+                if (e.target.closest('.weather-search')) return;
+                document.getElementById('weather-details').classList.toggle('show');
+            });
+            document.getElementById('weather-search-btn').addEventListener('click', () => {
+                const city = document.getElementById('weather-city-input').value.trim();
+                if (city) { searchWeatherCity(city); document.getElementById('weather-city-input').value = ''; }
+            });
+            document.getElementById('weather-city-input').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); document.getElementById('weather-search-btn').click(); }
+            });
+            // Close weather details on outside click
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#weather-widget')) document.getElementById('weather-details').classList.remove('show');
+            });
+            // Auto-refresh every 15 minutes
+            setInterval(() => {
+                const s = JSON.parse(localStorage.getItem('weatherCity'));
+                if (s) fetchWeather(s.lat, s.lon, s.name);
+            }, 900000);
+        }
+
+        // ============================================================
+        //  NEW FEATURE: Sticky Notes (draggable, color-coded, localStorage)
+        // ============================================================
+        const noteColors = [
+            {bg:'#FFEB95',text:'#5a4e28'},{bg:'#FFB3BA',text:'#5a2831'},
+            {bg:'#BAE6FD',text:'#1e3a5f'},{bg:'#BBF7D0',text:'#1a4731'},
+            {bg:'#E9D5FF',text:'#3b1f6e'},{bg:'#FED7AA',text:'#5a3517'},
+            {bg:'#E2E8F0',text:'#334155'},{bg:'#FECACA',text:'#7f1d1d'},
+            {bg:'#1e1e1e',text:'#e0e0e0'} // Dark mode
+        ];
+
+        function saveNotes() {
+            const noteEls = document.querySelectorAll('.sticky-note');
+            const data = [];
+            noteEls.forEach(el => {
+                data.push({
+                    id: el.dataset.noteId,
+                    x: parseInt(el.style.left), y: parseInt(el.style.top),
+                    content: el.querySelector('.sticky-note-body').innerHTML,
+                    colorIndex: parseInt(el.dataset.colorIndex) || 0
+                });
+            });
+            localStorage.setItem('stickyNotes', JSON.stringify(data));
+        }
+
+        function createNote(data = null) {
+            const container = document.getElementById('sticky-notes-container');
+            // Limit to 10 notes max
+            if (!data && container.querySelectorAll('.sticky-note').length >= 10) {
+                showNotification('Max 10 notes allowed!', '📝'); return;
+            }
+            const id = data?.id || 'note-' + Date.now();
+            const colorIndex = data?.colorIndex || 0;
+            const color = noteColors[colorIndex];
+            const note = document.createElement('div');
+            note.className = 'sticky-note';
+            note.dataset.noteId = id;
+            note.dataset.colorIndex = colorIndex;
+            note.style.left = (data?.x ?? (120 + Math.random() * 300)) + 'px';
+            note.style.top = (data?.y ?? (120 + Math.random() * 200)) + 'px';
+            note.style.backgroundColor = color.bg;
+            note.style.color = color.text;
+            note.innerHTML = `
+                <div class="sticky-note-header">
+                    <span style="font-size:0.75em;opacity:0.6;">📝 Note</span>
+                    <div class="note-actions">
+                        <button class="note-action-btn note-color-toggle" title="Change Color"><i class="bi bi-palette"></i></button>
+                        <button class="note-action-btn note-delete" title="Delete Note"><i class="bi bi-x-lg"></i></button>
+                    </div>
+                </div>
+                <div class="note-color-picker">
+                    ${noteColors.map((c, i) => `<div class="note-color-swatch" data-color-index="${i}" style="background:${c.bg}"></div>`).join('')}
+                </div>
+                <div class="sticky-note-body" contenteditable="true">${data?.content || 'Type here...'}</div>
+            `;
+            container.appendChild(note);
+            makeDraggable(note);
+
+            // Color picker toggle
+            note.querySelector('.note-color-toggle').addEventListener('click', (e) => {
+                e.stopPropagation();
+                note.querySelector('.note-color-picker').classList.toggle('show');
+            });
+            // Color swatch click
+            note.querySelector('.note-color-picker').addEventListener('click', (e) => {
+                const swatch = e.target.closest('.note-color-swatch');
+                if (!swatch) return;
+                const idx = parseInt(swatch.dataset.colorIndex);
+                const c = noteColors[idx];
+                note.style.backgroundColor = c.bg;
+                note.style.color = c.text;
+                note.dataset.colorIndex = idx;
+                note.querySelector('.note-color-picker').classList.remove('show');
+                saveNotes();
+            });
+            // Delete note
+            note.querySelector('.note-delete').addEventListener('click', () => { note.remove(); saveNotes(); });
+            // Save on content edit
+            note.querySelector('.sticky-note-body').addEventListener('input', debounce(saveNotes, 500));
+            // Close color picker on outside click
+            document.addEventListener('click', (e) => {
+                if (!note.contains(e.target)) note.querySelector('.note-color-picker')?.classList.remove('show');
+            });
+            if (!data) saveNotes();
+            return note;
+        }
+
+        function makeDraggable(el) {
+            const header = el.querySelector('.sticky-note-header');
+            let offX, offY, dragging = false;
+            const onStart = (e) => {
+                if (e.target.closest('.note-actions')) return;
+                dragging = true;
+                const rect = el.getBoundingClientRect();
+                const cx = e.touches ? e.touches[0].clientX : e.clientX;
+                const cy = e.touches ? e.touches[0].clientY : e.clientY;
+                offX = cx - rect.left; offY = cy - rect.top;
+                el.style.zIndex = '13';
+                if (e.cancelable) e.preventDefault();
+            };
+            const onMove = (e) => {
+                if (!dragging) return;
+                const cx = e.touches ? e.touches[0].clientX : e.clientX;
+                const cy = e.touches ? e.touches[0].clientY : e.clientY;
+                el.style.left = (cx - offX) + 'px';
+                el.style.top = (cy - offY) + 'px';
+            };
+            const onEnd = () => {
+                if (!dragging) return;
+                dragging = false; el.style.zIndex = '12'; saveNotes();
+            };
+            header.addEventListener('mousedown', onStart);
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onEnd);
+            header.addEventListener('touchstart', onStart, {passive: false});
+            document.addEventListener('touchmove', onMove, {passive: false});
+            document.addEventListener('touchend', onEnd);
+        }
+
+        function loadNotes() {
+            (JSON.parse(localStorage.getItem('stickyNotes')) || []).forEach(n => createNote(n));
+        }
+
+        // ============================================================
+        //  NEW FEATURE: Audio Visualizer (Web Audio API + Canvas)
+        // ============================================================
+        function initAudioContext() {
+            if (audioCtx) {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                return;
+            }
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioCtx.createAnalyser();
+            analyser.fftSize = 256;
+            analyser.smoothingTimeConstant = 0.82;
+            analyser.connect(audioCtx.destination);
+            // Connect all existing audio elements
+            Object.entries(audioPlayers).forEach(([id, audio]) => {
+                if (!audioSources[id] && audio.src && !audio._lazySrc) {
+                    try { const s = audioCtx.createMediaElementSource(audio); s.connect(analyser); audioSources[id] = s; } catch(e) {}
+                }
+            });
+        }
+
+        function setupVisualizerCanvas() {
+            const canvas = document.getElementById('visualizer-canvas');
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = canvas.offsetWidth * dpr;
+            canvas.height = canvas.offsetHeight * dpr;
+        }
+
+        function drawVisualizer() {
+            const canvas = document.getElementById('visualizer-canvas');
+            const ctx = canvas.getContext('2d');
+            const bufLen = analyser.frequencyBinCount;
+            const dataArr = new Uint8Array(bufLen);
+
+            function draw() {
+                if (!visualizerActive) return;
+                animFrameId = requestAnimationFrame(draw);
+                analyser.getByteFrequencyData(dataArr);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                const padX = canvas.width * 0.05; 
+                const padY = canvas.height * 0.15;
+                const drawWidth = canvas.width - (padX * 2);
+                const drawHeight = canvas.height - (padY * 2);
+
+                const barCount = 48; 
+                const totalGapSpace = drawWidth * 0.4;
+                const gap = totalGapSpace / (barCount - 1);
+                const barWidth = (drawWidth - totalGapSpace) / barCount;
+                
+                const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+                gradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)'); 
+                gradient.addColorStop(0.5, 'rgba(230, 200, 255, 0.95)'); 
+                gradient.addColorStop(1, 'rgba(166, 124, 255, 1)'); 
+                
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = 'rgba(255, 255, 255, 0.4)';
+                ctx.fillStyle = gradient;
+                
+                let x = padX;
+                
+                for (let i = 0; i < barCount; i++) {
+                    const v = dataArr[i] / 255.0;
+                    let h = v * drawHeight;
+                    if (h < 4) h = 4; // minimum height
+                    
+                    const y = canvas.height - padY - h;
+                    
+                    ctx.beginPath();
+                    if (ctx.roundRect) {
+                        ctx.roundRect(x, y, barWidth, h, [barWidth/2, barWidth/2, 0, 0]);
+                    } else {
+                        ctx.rect(x, y, barWidth, h);
+                    }
+                    ctx.fill();
+                    
+                    x += barWidth + gap;
+                }
+            }
+            draw();
+        }
+
+        function toggleVisualizer() {
+            const canvas = document.getElementById('visualizer-canvas');
+            const btn = document.getElementById('visualizer-btn');
+            visualizerActive = !visualizerActive;
+            if (visualizerActive) {
+                initAudioContext();
+                canvas.classList.remove('hidden');
+                btn.classList.add('active');
+                setupVisualizerCanvas();
+                drawVisualizer();
+            } else {
+                canvas.classList.add('hidden');
+                btn.classList.remove('active');
+                if (animFrameId) cancelAnimationFrame(animFrameId);
+            }
+        }
+
+        // Resize handler for visualizer canvas
+        window.addEventListener('resize', debounce(() => {
+            if (visualizerActive) setupVisualizerCanvas();
+        }, 250));
+
+        // ============================================================
+        //  NEW FEATURE: Alarm System
+        // ============================================================
+        let alarms = JSON.parse(localStorage.getItem('alarms') || '[]');
+        const alarmForm = document.getElementById('new-alarm-form');
+        const alarmList = document.getElementById('alarm-list');
+
+        function saveAlarms() { localStorage.setItem('alarms', JSON.stringify(alarms)); }
+        
+        function renderAlarms() {
+            alarmList.innerHTML = '';
+            alarms.forEach((alarm, idx) => {
+                const li = document.createElement('li');
+                li.style = 'display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid var(--panel-border); font-size: 0.85em;';
+                
+                const timeArr = alarm.time.split(':');
+                let h = parseInt(timeArr[0]); const m = timeArr[1];
+                const ampm = h >= 12 ? 'PM' : 'AM';
+                h = h % 12 || 12;
+                
+                li.innerHTML = `<span><strong>${h}:${m} ${ampm}</strong> - ${alarm.text}</span>
+                                <button class="delete-alarm" data-index="${idx}" style="background:none; border:none; color:#ff5555; cursor:pointer; font-size: 1.2em;"><i class="bi bi-x"></i></button>`;
+                alarmList.appendChild(li);
+            });
+        }
+        
+        if (alarmForm) {
+            alarmForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                alarms.push({ 
+                    time: document.getElementById('alarm-time-input').value, 
+                    text: document.getElementById('alarm-text-input').value, 
+                    triggered: false 
+                });
+                alarms.sort((a,b) => a.time.localeCompare(b.time));
+                saveAlarms(); renderAlarms();
+                alarmForm.reset();
+            });
+            
+            alarmList.addEventListener('click', (e) => {
+                const btn = e.target.closest('.delete-alarm');
+                if (btn) {
+                    alarms.splice(btn.dataset.index, 1);
+                    saveAlarms(); renderAlarms();
+                }
+            });
+        }
+
         // 6. App Initialization
         initScenes();
         initAmbience();
         renderTasks();
+        renderAlarms();
         updatePomoDisplay();
         setInterval(updateDateTime, 1000);
         updateDateTime();
         document.getElementById('fullscreen-btn').addEventListener('click', toggleFullscreen);
+        initWeather();
+        loadNotes();
+        document.getElementById('notes-btn').addEventListener('click', () => {
+            Object.values(panels).forEach(p => { p.panel.classList.remove('active'); p.btn.classList.remove('active'); });
+            createNote();
+        });
+        document.getElementById('visualizer-btn').addEventListener('click', toggleVisualizer);
         switchScene(0); // Load default scene on start
     });
     </script>
