@@ -362,7 +362,7 @@
         /* --- Mobile Performance & New Feature Responsive --- */
         @media (max-width: 768px) {
             .sticky-note, #notes-container { display: none !important; }
-            #weather-details { right: 0; left: auto; min-width: 200px; max-width: calc(100vw - 30px); padding: 15px; }
+            #weather-details { right: auto; left: 50%; transform: translateX(-50%); min-width: 200px; max-width: calc(100vw - 30px); padding: 15px; }
             #visualizer-canvas { height: 80px; bottom: 90px; width: 90vw; }
             .ui-panel, #bottom-controls, #weather-widget, #notification { backdrop-filter: blur(8px); }
             #bottom-controls .control-button { width: 44px; height: 44px; font-size: 1.4rem; }
@@ -374,7 +374,7 @@
             #weather-icon { font-size: 1.1em; }
             #weather-temp { font-size: 0.85em; }
             #weather-city { display: none; }
-            #weather-details { right: -10px; max-width: 95vw; }
+            #weather-details { right: auto; left: 50%; transform: translateX(-50%); max-width: 90vw; }
             #bottom-controls .control-button { width: 40px; height: 40px; font-size: 1.3rem; }
             .control-label { font-size: 0.55rem; }
             #bottom-controls { gap: 0; padding: 8px 5px; }
