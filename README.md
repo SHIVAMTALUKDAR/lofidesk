@@ -81,6 +81,7 @@ Fullscreen Mode: Immerse yourself completely by switching to fullscreen.
 Responsive Design: Enjoy a seamless experience on both desktop and mobile devices.
 Live Clock & Date: Keep track of the current time and date.
 
-<img width="3199" height="1930" alt="image" src="https://github.com/user-attachments/assets/f526fd52-7264-4fb9-943a-b3d57c7aff2a" />
-<img width="3189" height="1911" alt="image" src="https://github.com/user-attachments/assets/ffd7f72f-40a3-4adb-93dc-e3e6065dee84" />
-<img width="3194" height="1909" alt="image" src="https://github.com/user-attachments/assets/e8ba9050-164f-45d7-8e9b-c513ea15454a" />
+<img width="3200" height="2000" alt="image" src="https://github.com/user-attachments/assets/7d72e850-3f40-419c-91b3-305f17b7f61e" />
+<img width="3200" height="2000" alt="image" src="https://github.com/user-attachments/assets/abc36c36-60fd-41ed-b86e-4f25a8869592" />
+<img width="3200" height="2000" alt="image" src="https://github.com/user-attachments/assets/94cf92f3-e741-4889-865a-19e5611f8e70" />
+
