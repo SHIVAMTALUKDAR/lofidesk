@@ -53,12 +53,40 @@
         /* 2. Core Layout */
         #background-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -2; background-color: #000;
+            z-index: -2; background-color: #0a0d1a;
         }
-        
-        #background-video {
+
+        /* Dual-video crossfade: two videos stack, .active one is visible */
+        .bg-video {
+            position: absolute; top: 0; left: 0;
             width: 100%; height: 100%; object-fit: cover;
-            transition: opacity 0.8s ease-in-out; filter: brightness(0.7);
+            filter: brightness(0.7); opacity: 0;
+            transition: opacity 1.2s ease-in-out;
+        }
+        .bg-video.active { opacity: 1; z-index: 1; }
+        .bg-video:not(.active) { z-index: 0; }
+
+        /* Initial loading overlay */
+        #loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #0a0d1a; z-index: 9999;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            transition: opacity 0.8s ease-out;
+        }
+        #loading-overlay.fade-out { opacity: 0; pointer-events: none; }
+        #loading-overlay .loader-logo {
+            height: 120px; width: auto;
+            animation: loadPulse 1.8s ease-in-out infinite;
+            filter: drop-shadow(0 0 20px rgba(166, 124, 255, 0.4));
+        }
+        #loading-overlay .loader-text {
+            margin-top: 20px; font-size: 0.9em; font-weight: 300;
+            color: rgba(224, 224, 224, 0.6); letter-spacing: 2px;
+        }
+        @keyframes loadPulse {
+            0%, 100% { opacity: 0.5; transform: scale(0.97); }
+            50% { opacity: 1; transform: scale(1.03); }
         }
 
         #top-bar {
@@ -116,6 +144,7 @@
         #soundcloud-sidebar.minimized #soundcloud-content,
         #music-player.minimized #youtube-content {
             max-height: 0; opacity: 0; margin: 0; padding: 0; visibility: hidden;
+            transition: max-height 0.3s ease, opacity 0.2s ease;
         }
         #soundcloud-embed { width: 100%; height: 352px; border-radius: 12px; border: none; }
         #soundcloud-url-form { display: flex; gap: 10px; }
@@ -222,10 +251,11 @@
                 display: flex;
                 flex-direction: column;
             }
-            #top-bar { padding: 15px 20px; }
-            #logo { height: 100px; }
+            #top-bar { padding: 10px 15px; align-items: flex-start; }
+            #logo { height: 90px; }
             #time { font-size: 1.5em; }
             #date { font-size: 0.8em; }
+            #datetime { text-align: right; }
 
             /* Vertically center the music player */
             #main-content {
@@ -234,7 +264,7 @@
                 justify-content: center;
                 align-items: center;
                 overflow-y: auto;
-                padding-bottom: 100px; /* Space for bottom controls */
+                padding-bottom: 90px; /* Space for bottom controls */
             }
             #music-player {
                 position: relative; /* Overrides fixed position */
@@ -246,13 +276,49 @@
             }
             #youtube-url-form button { padding: 10px; }
 
-            #bottom-controls { width: calc(100% - 40px); left: 20px; transform: none; justify-content: space-around; padding: 10px 5px; gap: 0; }
+            /* YouTube player: when minimized on mobile, becomes a small floating pill */
+            #music-player.minimized {
+                position: fixed !important;
+                bottom: 70px; right: 10px;
+                width: auto; max-width: none;
+                padding: 8px 14px;
+                border-radius: 50px;
+                gap: 0;
+                animation: none;
+            }
+            #music-player.minimized .panel-header h4 {
+                font-size: 0.75em;
+            }
+            #music-player.minimized .panel-header .control-button {
+                font-size: 0.9rem; width: 24px; height: 24px;
+            }
+
+            /* Footer bar: compact to fit all 8 buttons */
+            #bottom-controls {
+                width: calc(100% - 20px); left: 10px; bottom: 10px;
+                transform: none; justify-content: space-evenly;
+                padding: 8px 4px; gap: 0;
+                border-radius: 20px;
+            }
+            #bottom-controls .control-button {
+                width: 34px; height: 34px; font-size: 1.1rem; padding: 3px;
+            }
+            .control-label { font-size: 0.5rem; }
+            .control-container { gap: 1px; }
             .ui-panel { width: 90vw; max-width: 500px; }
         }
         
         @media (max-width: 480px) {
-             #bottom-controls { bottom: 15px; }
-             /* Labels on bottom controls are kept for better UX based on previous fix */
+             #top-bar { padding: 8px 10px; }
+             #logo { height: 85px; }
+             #time { font-size: 1.5em; }
+             #date { font-size: 0.7em; }
+             #bottom-controls {
+                 bottom: 8px; width: calc(100% - 16px); left: 8px;
+                 padding: 6px 2px; border-radius: 16px;
+             }
+             #bottom-controls .control-button { width: 30px; height: 30px; font-size: 1.2rem; padding: 2px; }
+             .control-label { font-size: 0.6rem; }
         }
 
         /* --- Sticky Notes --- */
@@ -363,28 +429,31 @@
         @media (max-width: 768px) {
             .sticky-note, #notes-container { display: none !important; }
             #weather-details { right: auto; left: 50%; transform: translateX(-50%); min-width: 200px; max-width: calc(100vw - 30px); padding: 15px; }
-            #visualizer-canvas { height: 80px; bottom: 90px; width: 90vw; }
+            #visualizer-canvas { height: 100px; bottom: 100px; width: 90vw; }
             .ui-panel, #bottom-controls, #weather-widget, #notification { backdrop-filter: blur(8px); }
-            #bottom-controls .control-button { width: 44px; height: 44px; font-size: 1.4rem; }
-            .control-label { font-size: 0.6rem; }
-            #weather-widget { padding: 5px 8px; gap: 5px; }
-            #background-video { will-change: opacity; }
+            #weather-widget { padding: 4px 8px; gap: 4px; }
+            .bg-video { will-change: opacity; }
         }
         @media (max-width: 480px) {
-            #weather-icon { font-size: 1.1em; }
-            #weather-temp { font-size: 0.85em; }
+            #weather-icon { font-size: 1em; }
+            #weather-temp { font-size: 1.05em; }
             #weather-city { display: none; }
-            #weather-details { right: auto; left: 50%; transform: translateX(-50%); max-width: 90vw; }
-            #bottom-controls .control-button { width: 40px; height: 40px; font-size: 1.3rem; }
-            .control-label { font-size: 0.55rem; }
-            #bottom-controls { gap: 0; padding: 8px 5px; }
+            #weather-details { right: auto; left: 80%; transform: translateX(-50%); max-width: 90vw; }
         }
     </style>
 </head>
 <body>
 
+    <!-- Loading overlay: visible immediately, fades when content is ready -->
+    <div id="loading-overlay">
+        <img class="loader-logo" src="logo2.png" alt="Loading...">
+        <div class="loader-text">Preparing your space...</div>
+    </div>
+
     <div id="background-container">
-        <video id="background-video" autoplay muted loop playsinline></video>
+        <!-- Dual videos: old scene keeps playing while new one loads, then crossfade -->
+        <video id="bg-video-a" class="bg-video active" muted loop playsinline preload="none"></video>
+        <video id="bg-video-b" class="bg-video" muted loop playsinline preload="none"></video>
     </div>
 
     <header id="top-bar">
@@ -583,30 +652,30 @@
         const scenes = [
             // Existing Scenes
             { name: "Lofi Room", icon: "🛋️", bgVideo: "assets/videos/lofi_room.mp4", defaultAmbience: [""] },
-            { name: "Rainy Café", icon: "☕", bgVideo: "assets/videos/cafe.mp4", defaultAmbience: ["keyboard", "library_silence", "raindrop"] },
-            { name: "Forest", icon: "🌲", bgVideo: "assets/videos/forest.mp4", defaultAmbience: ["leaves", "wind", "deep_forest"] },
-            { name: "Ocean", icon: "🌊", bgVideo: "assets/videos/ocean.mp4", defaultAmbience: ["waves", "underwater"] },
-            { name: "Rainy Window", icon: "🌧️", bgVideo: "assets/videos/rainy.mp4", defaultAmbience: ["rain", "thunder", "wind"] },
-            { name: "Sunset Rooftop", icon: "🌇", bgVideo: "assets/videos/sunset_rooftop.mp4", defaultAmbience: ["wind", "cityscape", "wind_chimes"] },
-            { name: "Mountain Ranges", icon: "🏔️", bgVideo: "assets/videos/mountains.mp4", defaultAmbience: ["wind", "bird_in_rainforest"] },
-            { name: "Snowfall", icon: "❄️", bgVideo: "assets/videos/snowfall.mp4", defaultAmbience: ["wind", "walking_snow", "blizzard"] },
-            { name: "Thunderstorm", icon: "⛈️", bgVideo: "assets/videos/thunderstorm.mp4", defaultAmbience: ["thunderstorm", "wind", "rain", "thunder"] },
-            { name: "Starry Night", icon: "🌌", bgVideo: "assets/videos/starry_sky.mp4", defaultAmbience: ["cicadas", "wind", "night_fauna"] },
-            { name: "Campfire Night", icon: "🏕️", bgVideo: "assets/videos/campfire_night.mp4", defaultAmbience: ["campfire", "cicadas", "night_fauna", "crickets"] },
-            { name: "Sunrise Hills", icon: "🌄", bgVideo: "assets/videos/sunrise_hills.mp4", defaultAmbience: ["birds", "deep_forest"] },
-            { name: "Rainy Street Walk", icon: "🚶‍♀️", bgVideo: "assets/videos/rainy_street_walk.mp4", defaultAmbience: ["wind", "street", "cityscape", "raindrop", "library_silence"] },
-            { name: "Night Drive", icon: "🚗", bgVideo: "assets/videos/night_drive.mp4", defaultAmbience: ["street", "wind", "night_fauna"] },
+            { name: "Rainy Café", icon: "☕", bgVideo: "assets/videos/cafe.webm", defaultAmbience: ["keyboard", "library_silence", "raindrop"] },
+            { name: "Forest", icon: "🌲", bgVideo: "assets/videos/forest.webm", defaultAmbience: ["leaves", "wind", "deep_forest"] },
+            { name: "Ocean", icon: "🌊", bgVideo: "assets/videos/ocean.webm", defaultAmbience: ["waves", "underwater"] },
+            { name: "Rainy Window", icon: "🌧️", bgVideo: "assets/videos/rainy.webm", defaultAmbience: ["rain", "thunder", "wind"] },
+            { name: "Sunset Rooftop", icon: "🌇", bgVideo: "assets/videos/sunset_rooftop.webm", defaultAmbience: ["wind", "cityscape", "wind_chimes"] },
+            { name: "Mountain Ranges", icon: "🏔️", bgVideo: "assets/videos/mountains.webm", defaultAmbience: ["wind", "bird_in_rainforest"] },
+            { name: "Snowfall", icon: "❄️", bgVideo: "assets/videos/snowfall.webm", defaultAmbience: ["wind", "walking_snow", "blizzard"] },
+            { name: "Thunderstorm", icon: "⛈️", bgVideo: "assets/videos/thunderstorm.webm", defaultAmbience: ["thunderstorm", "wind", "rain", "thunder"] },
+            { name: "Starry Night", icon: "🌌", bgVideo: "assets/videos/starry_sky.webm", defaultAmbience: ["cicadas", "wind", "night_fauna"] },
+            { name: "Campfire Night", icon: "🏕️", bgVideo: "assets/videos/campfire_night.webm", defaultAmbience: ["campfire", "cicadas", "night_fauna", "crickets"] },
+            { name: "Sunrise Hills", icon: "🌄", bgVideo: "assets/videos/sunrise_hills.webm", defaultAmbience: ["birds", "deep_forest"] },
+            { name: "Rainy Street Walk", icon: "🚶‍♀️", bgVideo: "assets/videos/rainy_street_walk.webm", defaultAmbience: ["wind", "street", "cityscape", "raindrop", "library_silence"] },
+            { name: "Night Drive", icon: "🚗", bgVideo: "assets/videos/night_drive.webm", defaultAmbience: ["street", "wind", "night_fauna"] },
             // New Scenes
-            { name: "Train Journey", icon: "🚂", bgVideo: "assets/videos/train_journey.mp4", defaultAmbience: ["train", "wind"] },
-            { name: "rainforest", icon: "🌴", bgVideo: "assets/videos/rainforest.mp4", defaultAmbience: ["rainforest", "wind_trees", "water_stream", "raindrop"] },
-            { name: "Tokyo", icon: "🗼", bgVideo: "assets/videos/tokyo_evening.mp4", defaultAmbience: ["wind", "cityscape", "raindrop", "cicadas"] },
-            { name: "Vintage Library", icon: "📚", bgVideo: "assets/videos/library.mp4", defaultAmbience: ["library_silence", "writing", "clock"] },
-            { name: "Morning Time", icon: "☀️", bgVideo: "assets/videos/morning.mp4", defaultAmbience: ["leaves", "morning"] },
-            { name: "Mountain Temple", icon: "🛕", bgVideo: "assets/videos/mountain_temple.mp4", defaultAmbience: ["wind_chimes", "temple_bells", "birds"] },
-            { name: "Sea Beach", icon: "🏖️", bgVideo: "assets/videos/sea_beach.mp4", defaultAmbience: ["seagulls", "wind", "waves"] },
-            { name: "Hacker Vibe", icon: "👩🏻‍💻", bgVideo: "assets/videos/hacker.mp4", defaultAmbience: ["keyboard", "clock"] },
-            { name: "Gamer's Room", icon: "🎮", bgVideo: "assets/videos/gamer_room.mp4", defaultAmbience: ["rain", "keyboard"] },
-            { name: "Cyberpunk Cityscape", icon: "🌃", bgVideo: "assets/videos/cyberpunk_cityscape.mp4", defaultAmbience: ["street", "cityscape", "library_silence", "wind"] }
+            { name: "Train Journey", icon: "🚂", bgVideo: "assets/videos/train_journey.webm", defaultAmbience: ["train", "wind"] },
+            { name: "rainforest", icon: "🌴", bgVideo: "assets/videos/rainforest.webm", defaultAmbience: ["rainforest", "wind_trees", "water_stream", "raindrop"] },
+            { name: "Tokyo", icon: "🗼", bgVideo: "assets/videos/tokyo_evening.webm", defaultAmbience: ["wind", "cityscape", "raindrop", "cicadas"] },
+            { name: "Vintage Library", icon: "📚", bgVideo: "assets/videos/library.webm", defaultAmbience: ["library_silence", "writing", "clock"] },
+            { name: "Morning Time", icon: "☀️", bgVideo: "assets/videos/morning.webm", defaultAmbience: ["leaves", "morning"] },
+            { name: "Mountain Temple", icon: "🛕", bgVideo: "assets/videos/mountain_temple.webm", defaultAmbience: ["wind_chimes", "temple_bells", "birds"] },
+            { name: "Sea Beach", icon: "🏖️", bgVideo: "assets/videos/sea_beach.webm", defaultAmbience: ["seagulls", "wind", "waves"] },
+            { name: "Hacker Vibe", icon: "👩🏻‍💻", bgVideo: "assets/videos/hacker.webm", defaultAmbience: ["keyboard", "clock"] },
+            { name: "Gamer's Room", icon: "🎮", bgVideo: "assets/videos/gamer_room.webm", defaultAmbience: ["rain", "keyboard"] },
+            { name: "Cyberpunk Cityscape", icon: "🌃", bgVideo: "assets/videos/cyberpunk_cityscape.webm", defaultAmbience: ["street", "cityscape", "library_silence", "wind"] }
         ];
 
         // Developer can re-order these items to change the display order in the Ambience panel
@@ -651,7 +720,12 @@
         // 2. DOM Element Cache
         const timeElement = document.getElementById('time');
         const dateElement = document.getElementById('date');
-        const bgVideo = document.getElementById('background-video');
+        const bgVideoA = document.getElementById('bg-video-a');
+        const bgVideoB = document.getElementById('bg-video-b');
+        let activeVideo = bgVideoA;  // tracks which video is currently showing
+        const loadingOverlay = document.getElementById('loading-overlay');
+        let isFirstSceneLoad = true;
+        let sceneSwitchPending = false; // prevents rapid double-switches
         const notificationEl = document.getElementById('notification');
         const notificationIcon = document.getElementById('notification-icon');
         const notificationText = document.getElementById('notification-text');
@@ -709,21 +783,68 @@
             }
         }
 
-        // Changes the background video and default ambient sounds
+        // Changes the background video with a smooth live crossfade
+        // Old video keeps playing → new video loads behind it → crossfade → old video paused
         function switchScene(index) {
             const scene = scenes[index];
-            bgVideo.style.opacity = '0';
+
+            // The incoming video is whichever one is NOT currently active
+            const incomingVideo = (activeVideo === bgVideoA) ? bgVideoB : bgVideoA;
+            const outgoingVideo = activeVideo;
+
+            // Clean up any prior listener on the incoming video
+            incomingVideo.oncanplaythrough = null;
+
+            // Load the new scene into the incoming (hidden) video
+            incomingVideo.src = scene.bgVideo;
+            incomingVideo.load();
+
+            // Once the incoming video has buffered enough, crossfade
+            const performCrossfade = () => {
+                incomingVideo.oncanplaythrough = null;
+                incomingVideo.play().catch(err => console.error('Video autoplay prevented:', err));
+
+                // Crossfade: show incoming, hide outgoing
+                incomingVideo.classList.add('active');
+                outgoingVideo.classList.remove('active');
+                activeVideo = incomingVideo;
+
+                // After the CSS transition finishes, pause the old video to save resources
+                setTimeout(() => {
+                    outgoingVideo.pause();
+                    outgoingVideo.removeAttribute('src');
+                    outgoingVideo.load(); // release memory
+                }, 1400); // slightly longer than the 1.2s transition
+
+                sceneSwitchPending = false;
+
+                // Dismiss the initial loading overlay on first scene load
+                if (isFirstSceneLoad) {
+                    isFirstSceneLoad = false;
+                    loadingOverlay.classList.add('fade-out');
+                    setTimeout(() => loadingOverlay.remove(), 900);
+                }
+            };
+
+            incomingVideo.oncanplaythrough = performCrossfade;
+
+            // Fallback: if canplaythrough doesn't fire in 8s, crossfade anyway
             setTimeout(() => {
-                bgVideo.src = scene.bgVideo;
-                bgVideo.load();
-                bgVideo.play().catch(error => console.error("Video autoplay was prevented.", error));
-                bgVideo.style.opacity = '1';
-            }, 800);
+                if (activeVideo !== incomingVideo) {
+                    incomingVideo.play().catch(() => {});
+                    performCrossfade();
+                }
+            }, 8000);
+
+            // Update active scene button
             document.querySelectorAll('.scene-button').forEach(b => b.classList.remove('active'));
-            document.querySelector(`.scene-button[data-index='${index}']`).classList.add('active');
+            const activeBtn = document.querySelector(`.scene-button[data-index='${index}']`);
+            if (activeBtn) activeBtn.classList.add('active');
+
+            // Switch ambient sounds
             Object.keys(audioPlayers).forEach(id => {
                 const btn = document.querySelector(`.play-pause-btn[data-sound='${id}']`);
-                if(!btn) return;
+                if (!btn) return;
                 const isPlaying = btn.classList.contains('active');
                 const shouldPlay = scene.defaultAmbience.includes(id);
                 if (isPlaying && !shouldPlay) btn.click();
@@ -832,7 +953,14 @@
         });
         document.getElementById('youtube-header').addEventListener('click', (e) => {
              if (e.target.closest('#youtube-content')) return;
-             document.getElementById('music-player').classList.toggle('minimized');
+             const player = document.getElementById('music-player');
+             player.classList.toggle('minimized');
+             const icon = document.querySelector('#youtube-toggle-btn i');
+             if (player.classList.contains('minimized')) {
+                 icon.classList.replace('bi-chevron-up', 'bi-chevron-down');
+             } else {
+                 icon.classList.replace('bi-chevron-down', 'bi-chevron-up');
+             }
         });
         document.getElementById('youtube-url-form').addEventListener('submit', (e) => {
             e.preventDefault(); 
@@ -922,23 +1050,45 @@
         // ============================================================
         //  NEW FEATURE: Weather Widget (Open-Meteo API, no key needed)
         // ============================================================
+        // Weather codes with separate day and night icons
         const WEATHER_CODES = {
-            0:{d:'Clear sky',e:'☀️'},1:{d:'Mainly clear',e:'🌤️'},2:{d:'Partly cloudy',e:'⛅'},3:{d:'Overcast',e:'☁️'},
-            45:{d:'Foggy',e:'🌫️'},48:{d:'Rime fog',e:'🌫️'},51:{d:'Light drizzle',e:'🌦️'},53:{d:'Moderate drizzle',e:'🌦️'},
-            55:{d:'Dense drizzle',e:'🌧️'},61:{d:'Slight rain',e:'🌧️'},63:{d:'Moderate rain',e:'🌧️'},65:{d:'Heavy rain',e:'🌧️'},
-            71:{d:'Slight snow',e:'🌨️'},73:{d:'Moderate snow',e:'🌨️'},75:{d:'Heavy snow',e:'❄️'},77:{d:'Snow grains',e:'❄️'},
-            80:{d:'Slight showers',e:'🌦️'},81:{d:'Moderate showers',e:'🌧️'},82:{d:'Violent showers',e:'🌧️'},
-            85:{d:'Snow showers',e:'🌨️'},86:{d:'Heavy snow showers',e:'❄️'},
-            95:{d:'Thunderstorm',e:'⛈️'},96:{d:'T-storm + hail',e:'⛈️'},99:{d:'Severe t-storm',e:'⛈️'}
+            0:  { d: 'Clear sky',         day: '☀️',  night: '🌙' },
+            1:  { d: 'Mainly clear',      day: '🌤️', night: '🌙' },
+            2:  { d: 'Partly cloudy',     day: '⛅',   night: '☁️' },
+            3:  { d: 'Overcast',          day: '☁️',  night: '☁️' },
+            45: { d: 'Foggy',            day: '🌫️', night: '🌫️' },
+            48: { d: 'Rime fog',         day: '🌫️', night: '🌫️' },
+            51: { d: 'Light drizzle',    day: '🌦️', night: '🌧️' },
+            53: { d: 'Moderate drizzle', day: '🌦️', night: '🌧️' },
+            55: { d: 'Dense drizzle',    day: '🌧️', night: '🌧️' },
+            61: { d: 'Slight rain',      day: '🌧️', night: '🌧️' },
+            63: { d: 'Moderate rain',    day: '🌧️', night: '🌧️' },
+            65: { d: 'Heavy rain',       day: '🌧️', night: '🌧️' },
+            71: { d: 'Slight snow',      day: '🌨️', night: '🌨️' },
+            73: { d: 'Moderate snow',    day: '🌨️', night: '🌨️' },
+            75: { d: 'Heavy snow',       day: '❄️',  night: '❄️' },
+            77: { d: 'Snow grains',      day: '❄️',  night: '❄️' },
+            80: { d: 'Slight showers',   day: '🌦️', night: '🌧️' },
+            81: { d: 'Moderate showers', day: '🌧️', night: '🌧️' },
+            82: { d: 'Violent showers',  day: '🌧️', night: '🌧️' },
+            85: { d: 'Snow showers',     day: '🌨️', night: '🌨️' },
+            86: { d: 'Heavy snow showers', day: '❄️', night: '❄️' },
+            95: { d: 'Thunderstorm',     day: '⛈️', night: '⛈️' },
+            96: { d: 'T-storm + hail',   day: '⛈️', night: '⛈️' },
+            99: { d: 'Severe t-storm',   day: '⛈️', night: '⛈️' }
         };
-        function getWeatherInfo(code) { return WEATHER_CODES[code] || {d:'Unknown',e:'🌤️'}; }
+        function getWeatherInfo(code, isDay) {
+            const info = WEATHER_CODES[code] || { d: 'Unknown', day: '🌤️', night: '🌙' };
+            return { d: info.d, e: isDay ? info.day : info.night };
+        }
 
         async function fetchWeather(lat, lon, cityName = '') {
             try {
-                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m`);
+                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,is_day`);
                 const data = await res.json();
                 const c = data.current;
-                const info = getWeatherInfo(c.weather_code);
+                const isDay = c.is_day === 1;
+                const info = getWeatherInfo(c.weather_code, isDay);
                 document.getElementById('weather-icon').textContent = info.e;
                 document.getElementById('weather-temp').textContent = Math.round(c.temperature_2m) + '°C';
                 document.getElementById('weather-city').textContent = cityName || 'Your Location';
