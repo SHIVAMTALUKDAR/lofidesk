@@ -15,6 +15,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 
+    <!-- Supabase JS (for live people counter) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <style>
         /* 
          * Lofi Desk - Stylesheet
@@ -108,6 +111,53 @@
         }
         #time { font-size: 2em; font-weight: 600; }
         #date { font-size: 1em; }
+
+        /* People Online Counter */
+        #people-counter {
+            display: flex; align-items: center; gap: 8px;
+            background: rgba(15, 18, 30, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 50px;
+            padding: 6px 14px;
+            margin-top: 8px;
+            margin-left: auto;
+            width: fit-content;
+            font-size: 0.85em;
+            font-weight: 400;
+            letter-spacing: 0.3px;
+            transition: all var(--transition-speed) ease;
+        }
+        #people-counter:hover {
+            border-color: rgba(76, 217, 100, 0.3);
+            background: rgba(15, 18, 30, 0.85);
+        }
+        .online-dot {
+            width: 10px; height: 10px;
+            background: #4cd964;
+            border-radius: 50%;
+            box-shadow: 0 0 6px rgba(76, 217, 100, 0.6);
+            animation: pulseDot 2s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+        @keyframes pulseDot {
+            0%, 100% { box-shadow: 0 0 6px rgba(76, 217, 100, 0.6); transform: scale(1); }
+            50% { box-shadow: 0 0 12px rgba(76, 217, 100, 0.9); transform: scale(1.15); }
+        }
+        #online-count {
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            min-width: 1.5ch;
+            text-align: right;
+            transition: opacity 0.3s ease;
+        }
+        #online-count.updating {
+            opacity: 0.5;
+        }
+        .online-label {
+            font-weight: 300;
+            opacity: 0.8;
+        }
         
         #main-content {
             /* This is a wrapper for desktop players to manage their layout */
@@ -256,6 +306,7 @@
             #time { font-size: 1.5em; }
             #date { font-size: 0.8em; }
             #datetime { text-align: right; }
+            #people-counter { padding: 4px 10px; font-size: 0.75em; margin-top: 6px; }
 
             /* Vertically center the music player */
             #main-content {
@@ -313,6 +364,8 @@
              #logo { height: 85px; }
              #time { font-size: 1.5em; }
              #date { font-size: 0.7em; }
+             #people-counter { padding: 3px 8px; font-size: 0.7em; gap: 5px; margin-top: 4px; }
+             .online-dot { width: 7px; height: 7px; }
              #bottom-controls {
                  bottom: 8px; width: calc(100% - 16px); left: 8px;
                  padding: 6px 2px; border-radius: 16px;
@@ -483,6 +536,11 @@
             <div id="datetime">
                 <div id="time"></div>
                 <div id="date"></div>
+                <div id="people-counter">
+                    <span class="online-dot"></span>
+                    <span id="online-count">--</span>
+                    <span class="online-label">people online</span>
+                </div>
             </div>
         </div>
     </header>
@@ -1430,6 +1488,67 @@
         document.getElementById('fullscreen-btn').addEventListener('click', toggleFullscreen);
         initWeather();
         loadNotes();
+
+        // People Online Counter — Supabase Realtime Presence
+        (function initPeopleCounter() {
+            const countEl = document.getElementById('online-count');
+            
+            // =============================================
+            // 🔑 PASTE YOUR SUPABASE CREDENTIALS BELOW
+            // =============================================
+            const SUPABASE_URL = 'https://lnclrnazasyvldyjrnkf.supabase.co';       // e.g. 'https://xxxx.supabase.co'
+            const SUPABASE_KEY = 'sb_publishable_-U5KWjpLxvtoszyHzlqo7w_ahuf5yTx';   // e.g. 'eyJhbGci...'
+            // =============================================
+
+            // If credentials aren't set yet, show a fallback
+            if (SUPABASE_URL === 'YOUR_SUPABASE_URL' || SUPABASE_KEY === 'YOUR_SUPABASE_ANON_KEY') {
+                countEl.textContent = '--';
+                console.warn('People Counter: Please add your Supabase URL and anon key in index.html');
+                return;
+            }
+
+            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            const userId = crypto.randomUUID(); // unique ID for this browser tab
+            let currentCount = 0;
+
+            // Join the presence channel
+            const channel = supabase.channel('online-users', {
+                config: { presence: { key: userId } }
+            });
+
+            // Listen for presence changes (join/leave)
+            channel.on('presence', { event: 'sync' }, () => {
+                const state = channel.presenceState();
+                const newCount = Object.keys(state).length;
+                animateCount(currentCount, newCount);
+                currentCount = newCount;
+            });
+
+            // Subscribe and track this user
+            channel.subscribe(async (status) => {
+                if (status === 'SUBSCRIBED') {
+                    await channel.track({ user_id: userId, online_at: new Date().toISOString() });
+                }
+            });
+
+            // Smoothly animate the count change
+            function animateCount(from, to) {
+                const diff = to - from;
+                const steps = Math.abs(diff);
+                if (steps === 0) return;
+                const dir = diff > 0 ? 1 : -1;
+                let step = 0;
+                countEl.classList.add('updating');
+                const interval = setInterval(() => {
+                    step++;
+                    countEl.textContent = from + (dir * step);
+                    if (step >= steps) {
+                        clearInterval(interval);
+                        countEl.classList.remove('updating');
+                    }
+                }, 80);
+            }
+        })();
         document.getElementById('notes-btn').addEventListener('click', () => {
             Object.values(panels).forEach(p => { p.panel.classList.remove('active'); p.btn.classList.remove('active'); });
             createNote();
