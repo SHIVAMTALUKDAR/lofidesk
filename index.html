@@ -1401,11 +1401,11 @@
             document.addEventListener('click', (e) => {
                 if (!e.target.closest('#weather-widget')) document.getElementById('weather-details').classList.remove('show');
             });
-            // Auto-refresh every 15 minutes
+            // Auto-refresh every 5 minutes
             setInterval(() => {
                 const s = JSON.parse(localStorage.getItem('weatherCity'));
                 if (s) fetchWeather(s.lat, s.lon, s.name);
-            }, 900000);
+            }, 300000);
         }
 
         // ============================================================
