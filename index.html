@@ -59,6 +59,16 @@
             z-index: -2; background-color: #0a0d1a;
         }
 
+        /* Scene preview canvas: shows first frame instantly during transitions */
+        #scene-preview-canvas {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%; object-fit: cover;
+            filter: brightness(0.7); opacity: 0;
+            z-index: 0;
+            transition: opacity 1.2s ease-in-out;
+        }
+        #scene-preview-canvas.active { opacity: 1; }
+
         /* Dual-video crossfade: two videos stack, .active one is visible */
         .bg-video {
             position: absolute; top: 0; left: 0;
@@ -66,8 +76,8 @@
             filter: brightness(0.7); opacity: 0;
             transition: opacity 1.2s ease-in-out;
         }
-        .bg-video.active { opacity: 1; z-index: 1; }
-        .bg-video:not(.active) { z-index: 0; }
+        .bg-video.active { opacity: 1; z-index: 2; }
+        .bg-video:not(.active) { z-index: 1; }
 
         /* Initial loading overlay */
         #loading-overlay {
@@ -504,6 +514,8 @@
     </div>
 
     <div id="background-container">
+        <!-- Scene preview canvas: shows first frame of new scene instantly to prevent black flash -->
+        <canvas id="scene-preview-canvas"></canvas>
         <!-- Dual videos: old scene keeps playing while new one loads, then crossfade -->
         <video id="bg-video-a" class="bg-video active" muted loop playsinline preload="none"></video>
         <video id="bg-video-b" class="bg-video" muted loop playsinline preload="none"></video>
@@ -780,10 +792,13 @@
         const dateElement = document.getElementById('date');
         const bgVideoA = document.getElementById('bg-video-a');
         const bgVideoB = document.getElementById('bg-video-b');
+        const scenePreviewCanvas = document.getElementById('scene-preview-canvas');
+        const scenePreviewCtx = scenePreviewCanvas.getContext('2d');
         let activeVideo = bgVideoA;  // tracks which video is currently showing
         const loadingOverlay = document.getElementById('loading-overlay');
         let isFirstSceneLoad = true;
         let sceneSwitchPending = false; // prevents rapid double-switches
+        let firstFrameCache = {}; // caches first-frame data URLs per scene index
         const notificationEl = document.getElementById('notification');
         const notificationIcon = document.getElementById('notification-icon');
         const notificationText = document.getElementById('notification-text');
@@ -841,8 +856,33 @@
             }
         }
 
-        // Changes the background video with a smooth live crossfade
-        // Old video keeps playing → new video loads behind it → crossfade → old video paused
+        // Draws a video's first frame onto the preview canvas, sized to fill the screen
+        function drawFirstFrameToCanvas(videoEl) {
+            scenePreviewCanvas.width = window.innerWidth;
+            scenePreviewCanvas.height = window.innerHeight;
+            // Cover-fit: scale the video to cover the canvas (matching object-fit: cover)
+            const vw = videoEl.videoWidth || scenePreviewCanvas.width;
+            const vh = videoEl.videoHeight || scenePreviewCanvas.height;
+            const canvasRatio = scenePreviewCanvas.width / scenePreviewCanvas.height;
+            const videoRatio = vw / vh;
+            let drawW, drawH, drawX, drawY;
+            if (videoRatio > canvasRatio) {
+                drawH = scenePreviewCanvas.height;
+                drawW = drawH * videoRatio;
+                drawX = (scenePreviewCanvas.width - drawW) / 2;
+                drawY = 0;
+            } else {
+                drawW = scenePreviewCanvas.width;
+                drawH = drawW / videoRatio;
+                drawX = 0;
+                drawY = (scenePreviewCanvas.height - drawH) / 2;
+            }
+            scenePreviewCtx.drawImage(videoEl, drawX, drawY, drawW, drawH);
+        }
+
+        // Changes the background video with a smooth crossfade.
+        // Strategy: show the first frame immediately via canvas preview,
+        // crossfade to it, then load and play the full video seamlessly on top.
         function switchScene(index) {
             const scene = scenes[index];
 
@@ -850,31 +890,39 @@
             const incomingVideo = (activeVideo === bgVideoA) ? bgVideoB : bgVideoA;
             const outgoingVideo = activeVideo;
 
-            // Clean up any prior listener on the incoming video
+            // Clean up any prior listeners on the incoming video
             incomingVideo.oncanplaythrough = null;
+            incomingVideo.onseeked = null;
+            incomingVideo.onloadeddata = null;
 
-            // Load the new scene into the incoming (hidden) video
+            // Ensure the incoming video is hidden during loading
+            incomingVideo.classList.remove('active');
+
+            // --- STEP 1: Load new video and capture its first frame ---
             incomingVideo.src = scene.bgVideo;
+            incomingVideo.preload = 'auto';
             incomingVideo.load();
 
-            // Once the incoming video has buffered enough, crossfade
-            const performCrossfade = () => {
-                incomingVideo.oncanplaythrough = null;
-                incomingVideo.play().catch(err => console.error('Video autoplay prevented:', err));
+            let crossfadeDone = false;
 
-                // Crossfade: show incoming, hide outgoing
-                incomingVideo.classList.add('active');
+            // Called once we have the first frame — show it immediately via canvas crossfade
+            const showFirstFrame = () => {
+                if (crossfadeDone) return;
+                crossfadeDone = true;
+
+                // Draw the first frame of the new video onto the preview canvas
+                try {
+                    drawFirstFrameToCanvas(incomingVideo);
+                } catch (e) {
+                    // If drawing fails (e.g., CORS), still proceed with crossfade
+                    console.warn('Could not capture first frame:', e);
+                }
+
+                // Show the canvas preview (crossfade in via CSS transition)
+                scenePreviewCanvas.classList.add('active');
+
+                // Fade out the old video
                 outgoingVideo.classList.remove('active');
-                activeVideo = incomingVideo;
-
-                // After the CSS transition finishes, pause the old video to save resources
-                setTimeout(() => {
-                    outgoingVideo.pause();
-                    outgoingVideo.removeAttribute('src');
-                    outgoingVideo.load(); // release memory
-                }, 1400); // slightly longer than the 1.2s transition
-
-                sceneSwitchPending = false;
 
                 // Dismiss the initial loading overlay on first scene load
                 if (isFirstSceneLoad) {
@@ -882,15 +930,97 @@
                     loadingOverlay.classList.add('fade-out');
                     setTimeout(() => loadingOverlay.remove(), 900);
                 }
+
+                // --- STEP 2: Once the video is fully ready, play it on top of the canvas ---
+                const startPlayback = () => {
+                    incomingVideo.play().then(() => {
+                        // Show the video layer on top of the canvas
+                        incomingVideo.classList.add('active');
+                        activeVideo = incomingVideo;
+
+                        // After the CSS transition finishes, clean up
+                        setTimeout(() => {
+                            // Hide the canvas preview (video is now playing on top)
+                            scenePreviewCanvas.classList.remove('active');
+                            // Pause and release the old video to save resources
+                            outgoingVideo.pause();
+                            outgoingVideo.removeAttribute('src');
+                            outgoingVideo.load();
+                        }, 1400);
+                    }).catch(err => {
+                        console.error('Video autoplay prevented:', err);
+                        // Still show the video element even if autoplay blocked
+                        incomingVideo.classList.add('active');
+                        activeVideo = incomingVideo;
+                        setTimeout(() => {
+                            scenePreviewCanvas.classList.remove('active');
+                            outgoingVideo.pause();
+                            outgoingVideo.removeAttribute('src');
+                            outgoingVideo.load();
+                        }, 1400);
+                    });
+
+                    sceneSwitchPending = false;
+                };
+
+                // If the video can already play through, start immediately
+                if (incomingVideo.readyState >= 3) {
+                    startPlayback();
+                } else {
+                    // Wait until it's buffered enough to play smoothly
+                    incomingVideo.oncanplaythrough = () => {
+                        incomingVideo.oncanplaythrough = null;
+                        startPlayback();
+                    };
+                    // Safety fallback: don't wait more than 6s for full buffer
+                    setTimeout(() => {
+                        if (activeVideo !== incomingVideo) {
+                            incomingVideo.oncanplaythrough = null;
+                            startPlayback();
+                        }
+                    }, 6000);
+                }
             };
 
-            incomingVideo.oncanplaythrough = performCrossfade;
+            // Use 'loadeddata' — fires once the first frame is available for rendering
+            incomingVideo.onloadeddata = () => {
+                incomingVideo.onloadeddata = null;
+                // Seek to the very start to ensure first frame
+                if (incomingVideo.currentTime !== 0) {
+                    incomingVideo.currentTime = 0;
+                    incomingVideo.onseeked = () => {
+                        incomingVideo.onseeked = null;
+                        showFirstFrame();
+                    };
+                } else {
+                    showFirstFrame();
+                }
+            };
 
-            // Fallback: if canplaythrough doesn't fire in 8s, crossfade anyway
+            // Fallback: if loadeddata doesn't fire in 8s, crossfade anyway
+            // (better to show something than stay stuck)
             setTimeout(() => {
-                if (activeVideo !== incomingVideo) {
+                if (!crossfadeDone) {
+                    incomingVideo.onloadeddata = null;
+                    incomingVideo.onseeked = null;
+                    // Try to play and crossfade directly
                     incomingVideo.play().catch(() => {});
-                    performCrossfade();
+                    incomingVideo.classList.add('active');
+                    outgoingVideo.classList.remove('active');
+                    activeVideo = incomingVideo;
+                    crossfadeDone = true;
+                    sceneSwitchPending = false;
+                    setTimeout(() => {
+                        scenePreviewCanvas.classList.remove('active');
+                        outgoingVideo.pause();
+                        outgoingVideo.removeAttribute('src');
+                        outgoingVideo.load();
+                    }, 1400);
+                    if (isFirstSceneLoad) {
+                        isFirstSceneLoad = false;
+                        loadingOverlay.classList.add('fade-out');
+                        setTimeout(() => loadingOverlay.remove(), 900);
+                    }
                 }
             }, 8000);
 
