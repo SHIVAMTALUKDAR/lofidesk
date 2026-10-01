@@ -76,6 +76,17 @@
             filter: brightness(0.7); opacity: 0;
             transition: opacity 1.2s ease-in-out;
         }
+
+        /* Mobile wallpaper: static image used instead of video on mobile for performance */
+        #mobile-bg-image {
+            display: none; /* hidden on desktop, shown via media query on mobile */
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%; object-fit: cover;
+            filter: brightness(0.7);
+            opacity: 1;
+            transition: opacity 0.8s ease-in-out;
+        }
+        #mobile-bg-image.fade-out { opacity: 0; }
         .bg-video.active { opacity: 1; z-index: 2; }
         .bg-video:not(.active) { z-index: 1; }
 
@@ -341,9 +352,9 @@
             #music-player.minimized {
                 position: fixed !important;
                 bottom: 70px; right: 10px;
-                width: auto; max-width: none;
+                width: 150px; max-width: none;
                 padding: 8px 14px;
-                border-radius: 50px;
+                border-radius: 30px;
                 gap: 0;
                 animation: none;
             }
@@ -495,7 +506,9 @@
             #visualizer-canvas { height: 100px; bottom: 100px; width: 90vw; }
             .ui-panel, #bottom-controls, #weather-widget, #notification { backdrop-filter: blur(8px); }
             #weather-widget { padding: 4px 8px; gap: 4px; }
-            .bg-video { will-change: opacity; }
+            /* Mobile: hide videos entirely, use static wallpapers for performance */
+            .bg-video, #scene-preview-canvas { display: none !important; }
+            #mobile-bg-image { display: block !important; }
         }
         @media (max-width: 480px) {
             #weather-icon { font-size: 1em; }
@@ -514,6 +527,8 @@
     </div>
 
     <div id="background-container">
+        <!-- Mobile wallpaper: static image used on mobile for performance -->
+        <img id="mobile-bg-image" src="" alt="Scene Background">
         <!-- Scene preview canvas: shows first frame of new scene instantly to prevent black flash -->
         <canvas id="scene-preview-canvas"></canvas>
         <!-- Dual videos: old scene keeps playing while new one loads, then crossfade -->
@@ -721,31 +736,31 @@
         // 1. Data Definitions
         const scenes = [
             // Existing Scenes
-            { name: "Lofi Room", icon: "🛋️", bgVideo: "assets/videos/lofi_room.mp4", defaultAmbience: [""] },
-            { name: "Rainy Café", icon: "☕", bgVideo: "assets/videos/cafe.webm", defaultAmbience: ["keyboard", "library_silence", "raindrop"] },
-            { name: "Forest", icon: "🌲", bgVideo: "assets/videos/forest.webm", defaultAmbience: ["leaves", "wind", "deep_forest"] },
-            { name: "Ocean", icon: "🌊", bgVideo: "assets/videos/ocean.webm", defaultAmbience: ["waves", "underwater"] },
-            { name: "Rainy Window", icon: "🌧️", bgVideo: "assets/videos/rainy.webm", defaultAmbience: ["rain", "thunder", "wind"] },
-            { name: "Sunset Rooftop", icon: "🌇", bgVideo: "assets/videos/sunset_rooftop.webm", defaultAmbience: ["wind", "cityscape", "wind_chimes"] },
-            { name: "Mountain Ranges", icon: "🏔️", bgVideo: "assets/videos/mountains.webm", defaultAmbience: ["wind", "bird_in_rainforest"] },
-            { name: "Snowfall", icon: "❄️", bgVideo: "assets/videos/snowfall.webm", defaultAmbience: ["wind", "walking_snow", "blizzard"] },
-            { name: "Thunderstorm", icon: "⛈️", bgVideo: "assets/videos/thunderstorm.webm", defaultAmbience: ["thunderstorm", "wind", "rain", "thunder"] },
-            { name: "Starry Night", icon: "🌌", bgVideo: "assets/videos/starry_sky.webm", defaultAmbience: ["cicadas", "wind", "night_fauna"] },
-            { name: "Campfire Night", icon: "🏕️", bgVideo: "assets/videos/campfire_night.webm", defaultAmbience: ["campfire", "cicadas", "night_fauna", "crickets"] },
-            { name: "Sunrise Hills", icon: "🌄", bgVideo: "assets/videos/sunrise_hills.webm", defaultAmbience: ["birds", "deep_forest"] },
-            { name: "Rainy Street Walk", icon: "🚶‍♀️", bgVideo: "assets/videos/rainy_street_walk.webm", defaultAmbience: ["wind", "street", "cityscape", "raindrop", "library_silence"] },
-            { name: "Night Drive", icon: "🚗", bgVideo: "assets/videos/night_drive.webm", defaultAmbience: ["street", "wind", "night_fauna"] },
+            { name: "Lofi Room", icon: "🛋️", bgVideo: "assets/videos/lofi_room.mp4", mobileWallpaper: "assets/mobile wallpapers/lofi_room.png", defaultAmbience: [""] },
+            { name: "Rainy Café", icon: "☕", bgVideo: "assets/videos/cafe.webm", mobileWallpaper: "assets/mobile wallpapers/cafe.png", defaultAmbience: ["keyboard", "library_silence", "raindrop"] },
+            { name: "Forest", icon: "🌲", bgVideo: "assets/videos/forest.webm", mobileWallpaper: "assets/mobile wallpapers/forest.png", defaultAmbience: ["leaves", "wind", "deep_forest"] },
+            { name: "Ocean", icon: "🌊", bgVideo: "assets/videos/ocean.webm", mobileWallpaper: "assets/mobile wallpapers/ocean.png", defaultAmbience: ["waves", "underwater"] },
+            { name: "Rainy Window", icon: "🌧️", bgVideo: "assets/videos/rainy.webm", mobileWallpaper: "assets/mobile wallpapers/rainy_window.png", defaultAmbience: ["rain", "thunder", "wind"] },
+            { name: "Sunset Rooftop", icon: "🌇", bgVideo: "assets/videos/sunset_rooftop.webm", mobileWallpaper: "assets/mobile wallpapers/sunset_rooftop.png", defaultAmbience: ["wind", "cityscape", "wind_chimes"] },
+            { name: "Mountain Ranges", icon: "🏔️", bgVideo: "assets/videos/mountains.webm", mobileWallpaper: "assets/mobile wallpapers/mountian.png", defaultAmbience: ["wind", "bird_in_rainforest"] },
+            { name: "Snowfall", icon: "❄️", bgVideo: "assets/videos/snowfall.webm", mobileWallpaper: "assets/mobile wallpapers/snowfall.png", defaultAmbience: ["wind", "walking_snow", "blizzard"] },
+            { name: "Thunderstorm", icon: "⛈️", bgVideo: "assets/videos/thunderstorm.webm", mobileWallpaper: "assets/mobile wallpapers/thunderstorm.png", defaultAmbience: ["thunderstorm", "wind", "rain", "thunder"] },
+            { name: "Starry Night", icon: "🌌", bgVideo: "assets/videos/starry_sky.webm", mobileWallpaper: "assets/mobile wallpapers/starry_night.png", defaultAmbience: ["cicadas", "wind", "night_fauna"] },
+            { name: "Campfire Night", icon: "🏕️", bgVideo: "assets/videos/campfire_night.webm", mobileWallpaper: "assets/mobile wallpapers/campfire.png", defaultAmbience: ["campfire", "cicadas", "night_fauna", "crickets"] },
+            { name: "Sunrise Hills", icon: "🌄", bgVideo: "assets/videos/sunrise_hills.webm", mobileWallpaper: "assets/mobile wallpapers/sunrise_hills.png", defaultAmbience: ["birds", "deep_forest"] },
+            { name: "Rainy Street Walk", icon: "🚶‍♀️", bgVideo: "assets/videos/rainy_street_walk.webm", mobileWallpaper: "assets/mobile wallpapers/rainy_street_walk.png", defaultAmbience: ["wind", "street", "cityscape", "raindrop", "library_silence"] },
+            { name: "Night Drive", icon: "🚗", bgVideo: "assets/videos/night_drive.webm", mobileWallpaper: "assets/mobile wallpapers/night_drive.png", defaultAmbience: ["street", "wind", "night_fauna"] },
             // New Scenes
-            { name: "Train Journey", icon: "🚂", bgVideo: "assets/videos/train_journey.webm", defaultAmbience: ["train", "wind"] },
-            { name: "rainforest", icon: "🌴", bgVideo: "assets/videos/rainforest.webm", defaultAmbience: ["rainforest", "wind_trees", "water_stream", "raindrop"] },
-            { name: "Tokyo", icon: "🗼", bgVideo: "assets/videos/tokyo_evening.webm", defaultAmbience: ["wind", "cityscape", "raindrop", "cicadas"] },
-            { name: "Vintage Library", icon: "📚", bgVideo: "assets/videos/library.webm", defaultAmbience: ["library_silence", "writing", "clock"] },
-            { name: "Morning Time", icon: "☀️", bgVideo: "assets/videos/morning.webm", defaultAmbience: ["leaves", "morning"] },
-            { name: "Mountain Temple", icon: "🛕", bgVideo: "assets/videos/mountain_temple.webm", defaultAmbience: ["wind_chimes", "temple_bells", "birds"] },
-            { name: "Sea Beach", icon: "🏖️", bgVideo: "assets/videos/sea_beach.webm", defaultAmbience: ["seagulls", "wind", "waves"] },
-            { name: "Hacker Vibe", icon: "👩🏻‍💻", bgVideo: "assets/videos/hacker.webm", defaultAmbience: ["keyboard", "clock"] },
-            { name: "Gamer's Room", icon: "🎮", bgVideo: "assets/videos/gamer_room.webm", defaultAmbience: ["rain", "keyboard"] },
-            { name: "Cyberpunk Cityscape", icon: "🌃", bgVideo: "assets/videos/cyberpunk_cityscape.webm", defaultAmbience: ["street", "cityscape", "library_silence", "wind"] }
+            { name: "Train Journey", icon: "🚂", bgVideo: "assets/videos/train_journey.webm", mobileWallpaper: "assets/mobile wallpapers/train_journey.png", defaultAmbience: ["train", "wind"] },
+            { name: "rainforest", icon: "🌴", bgVideo: "assets/videos/rainforest.webm", mobileWallpaper: "assets/mobile wallpapers/rainforest.png", defaultAmbience: ["rainforest", "wind_trees", "water_stream", "raindrop"] },
+            { name: "Tokyo", icon: "🗼", bgVideo: "assets/videos/tokyo_evening.webm", mobileWallpaper: "assets/mobile wallpapers/tokyo.png", defaultAmbience: ["wind", "cityscape", "raindrop", "cicadas"] },
+            { name: "Vintage Library", icon: "📚", bgVideo: "assets/videos/library.webm", mobileWallpaper: "assets/mobile wallpapers/library.png", defaultAmbience: ["library_silence", "writing", "clock"] },
+            { name: "Morning Time", icon: "☀️", bgVideo: "assets/videos/morning.webm", mobileWallpaper: "assets/mobile wallpapers/morning_time.png", defaultAmbience: ["leaves", "morning"] },
+            { name: "Mountain Temple", icon: "🛕", bgVideo: "assets/videos/mountain_temple.webm", mobileWallpaper: "assets/mobile wallpapers/mountain_temple.png", defaultAmbience: ["wind_chimes", "temple_bells", "birds"] },
+            { name: "Sea Beach", icon: "🏖️", bgVideo: "assets/videos/sea_beach.webm", mobileWallpaper: "assets/mobile wallpapers/sea_beach.png", defaultAmbience: ["seagulls", "wind", "waves"] },
+            { name: "Hacker Vibe", icon: "👩🏻‍💻", bgVideo: "assets/videos/hacker.webm", mobileWallpaper: "assets/mobile wallpapers/hacker_vibe.png", defaultAmbience: ["keyboard", "clock"] },
+            { name: "Gamer's Room", icon: "🎮", bgVideo: "assets/videos/gamer_room.webm", mobileWallpaper: "assets/mobile wallpapers/gamer_room.png", defaultAmbience: ["rain", "keyboard"] },
+            { name: "Cyberpunk Cityscape", icon: "🌃", bgVideo: "assets/videos/cyberpunk_cityscape.webm", mobileWallpaper: "assets/mobile wallpapers/cyberpunk.png", defaultAmbience: ["street", "cityscape", "library_silence", "wind"] }
         ];
 
         // Developer can re-order these items to change the display order in the Ambience panel
@@ -795,6 +810,7 @@
         const scenePreviewCanvas = document.getElementById('scene-preview-canvas');
         const scenePreviewCtx = scenePreviewCanvas.getContext('2d');
         let activeVideo = bgVideoA;  // tracks which video is currently showing
+        const mobileBgImage = document.getElementById('mobile-bg-image');
         const loadingOverlay = document.getElementById('loading-overlay');
         let isFirstSceneLoad = true;
         let sceneSwitchPending = false; // prevents rapid double-switches
@@ -885,6 +901,66 @@
         // crossfade to it, then load and play the full video seamlessly on top.
         function switchScene(index) {
             const scene = scenes[index];
+
+            // ============================================================
+            // MOBILE PATH: Use static wallpaper images for performance
+            // No video loading/decoding — just swap images with a crossfade
+            // ============================================================
+            if (isMobile && scene.mobileWallpaper) {
+                // Preload the new wallpaper image
+                const newImg = new Image();
+                newImg.src = scene.mobileWallpaper;
+
+                const applyWallpaper = () => {
+                    // Fade out the current image
+                    mobileBgImage.classList.add('fade-out');
+
+                    // After fade-out completes, swap the source and fade back in
+                    setTimeout(() => {
+                        mobileBgImage.src = scene.mobileWallpaper;
+                        mobileBgImage.classList.remove('fade-out');
+                    }, 800); // matches the 0.8s CSS transition
+
+                    sceneSwitchPending = false;
+
+                    // Dismiss the initial loading overlay on first scene load
+                    if (isFirstSceneLoad) {
+                        isFirstSceneLoad = false;
+                        loadingOverlay.classList.add('fade-out');
+                        setTimeout(() => loadingOverlay.remove(), 900);
+                    }
+                };
+
+                // If image is already cached/loaded, apply immediately
+                if (newImg.complete) {
+                    applyWallpaper();
+                } else {
+                    newImg.onload = applyWallpaper;
+                    // Fallback: if image doesn't load in 5s, apply anyway
+                    setTimeout(() => { newImg.onload = null; applyWallpaper(); }, 5000);
+                }
+
+                // Update active scene button
+                document.querySelectorAll('.scene-button').forEach(b => b.classList.remove('active'));
+                const activeBtn = document.querySelector(`.scene-button[data-index='${index}']`);
+                if (activeBtn) activeBtn.classList.add('active');
+
+                // Switch ambient sounds
+                Object.keys(audioPlayers).forEach(id => {
+                    const btn = document.querySelector(`.play-pause-btn[data-sound='${id}']`);
+                    if (!btn) return;
+                    const isPlaying = btn.classList.contains('active');
+                    const shouldPlay = scene.defaultAmbience.includes(id);
+                    if (isPlaying && !shouldPlay) btn.click();
+                    else if (!isPlaying && shouldPlay) btn.click();
+                });
+
+                return; // Skip the desktop video path entirely
+            }
+
+            // ============================================================
+            // DESKTOP PATH: Full video crossfade with first-frame preview
+            // ============================================================
 
             // The incoming video is whichever one is NOT currently active
             const incomingVideo = (activeVideo === bgVideoA) ? bgVideoB : bgVideoA;
