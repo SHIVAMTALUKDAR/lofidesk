@@ -499,6 +499,222 @@
         }
         #visualizer-canvas.hidden { opacity: 0; }
 
+        /* --- Lofi Radio: Pill-Shaped Music Player --- */
+        #radio-player-bar {
+            position: fixed;
+            bottom: 115px; /* Higher to avoid overlapping footer */
+            left: 50%;
+            transform: translateX(-50%) translateY(30px);
+            width: 92vw;
+            max-width: 650px; /* Shorter length */
+            height: 72px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(15px);
+            border-radius: 36px; /* Fully rounded pill */
+            display: flex;
+            align-items: center;
+            padding: 0 24px 0 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            z-index: 40;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid var(--panel-border);
+        }
+        #radio-player-bar.active {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+            pointer-events: all;
+        }
+        #radio-player-bar.minimized {
+            width: fit-content;
+            padding-right: 18px;
+            left: 20px;
+            bottom: 20px;
+            transform: none;
+        }
+        #radio-player-bar.minimized .rp-info,
+        #radio-player-bar.minimized .rp-volume-wrap {
+            display: none;
+        }
+
+        .rp-art {
+            width: 48px; height: 48px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2.2em; flex-shrink: 0;
+            /* No background or border so the emoji serves as the full image */
+        }
+        .rp-info {
+            flex: 1; margin-left: 16px;
+            display: flex; flex-direction: column; justify-content: center;
+            overflow: hidden; white-space: nowrap;
+        }
+        .rp-title {
+            color: #fff; font-size: 1.05em; font-weight: 600;
+            text-overflow: ellipsis; overflow: hidden;
+            margin-bottom: 2px;
+        }
+        .rp-desc {
+            color: rgba(255,255,255,0.5); font-size: 0.85em;
+            text-overflow: ellipsis; overflow: hidden;
+        }
+
+        #rp-visualizer {
+            width: 100px; height: 32px;
+            margin: 0 16px; display: block;
+            opacity: 0.85;
+        }
+
+        .rp-controls {
+            display: flex; align-items: center; gap: 18px;
+        }
+        .rp-btn {
+            background: none; border: none; color: rgba(255,255,255,0.6);
+            font-size: 1.25em; cursor: pointer; transition: color 0.2s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .rp-btn:hover { color: #fff; }
+        
+        .rp-play-btn {
+            width: 48px; height: 48px; border-radius: 50%;
+            background: #fff; color: #1a1412; font-size: 1.5em;
+            display: flex; align-items: center; justify-content: center;
+            border: none; cursor: pointer; transition: transform 0.2s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .rp-play-btn:hover { transform: scale(1.05); }
+        .rp-play-btn.loading { opacity: 0.7; pointer-events: none; animation: rpPulse 1s infinite; }
+        @keyframes rpPulse { 0%,100%{opacity:0.7;} 50%{opacity:0.3;} }
+
+        .rp-volume-wrap {
+            display: flex; align-items: center; gap: 0; margin-left: 8px;
+            cursor: pointer;
+        }
+        .rp-volume-wrap i { color: rgba(255,255,255,0.5); font-size: 1.2em; padding: 5px; transition: color 0.2s; }
+        .rp-volume-wrap i:hover { color: #fff; }
+        .rp-volume-slider {
+            -webkit-appearance: none; appearance: none;
+            width: 0; height: 4px; border-radius: 2px;
+            background: rgba(255,255,255,0.15); outline: none;
+            opacity: 0; transition: width 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s, margin 0.3s;
+            margin-left: 0; pointer-events: none;
+        }
+        .rp-volume-wrap:hover .rp-volume-slider, .rp-volume-slider:focus, .rp-volume-slider:active {
+            width: 80px; opacity: 1; margin-left: 10px; pointer-events: all;
+        }
+        .rp-volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%;
+            background: #fff; cursor: pointer; transition: transform 0.2s;
+        }
+        .rp-volume-slider::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+        .rp-minimize-btn { margin-left: 12px; font-size: 1.1em; color: rgba(255,255,255,0.4); }
+
+        /* --- Lofi Radio Station Panel (List Only) --- */
+        #radio-panel {
+            position: fixed;
+            bottom: 105px; left: 50%; transform: translateX(-50%);
+            width: 380px; max-width: 90vw; max-height: 55vh;
+            display: none; flex-direction: column; gap: 0;
+            z-index: 30;
+            background: rgba(20, 22, 40, 0.9);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(166, 124, 255, 0.15);
+            border-radius: 20px;
+            padding: 0;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+            overflow: hidden;
+        }
+        #radio-panel.active { display: flex; animation: fadeIn 0.3s ease-out; }
+
+        .radio-panel-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 18px 22px 14px;
+            border-bottom: 1px solid rgba(166, 124, 255, 0.1);
+            background: linear-gradient(135deg, rgba(166, 124, 255, 0.08), transparent);
+        }
+        .radio-panel-header h4 {
+            font-size: 1em; font-weight: 500; margin: 0;
+            display: flex; align-items: center; gap: 8px; color: var(--primary-text);
+        }
+        .radio-panel-header h4 .radio-icon {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 28px; height: 28px; border-radius: 8px;
+            background: linear-gradient(135deg, var(--accent-color), #7c4dff);
+            font-size: 0.85em;
+        }
+        .radio-panel-close {
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+            color: var(--primary-text); width: 30px; height: 30px;
+            border-radius: 8px; cursor: pointer; display: flex;
+            align-items: center; justify-content: center; font-size: 0.9em;
+            transition: all 0.2s;
+        }
+        .radio-panel-close:hover {
+            background: rgba(255, 80, 80, 0.2); border-color: rgba(255, 80, 80, 0.3);
+        }
+
+        /* Station List */
+        .radio-stations-list {
+            padding: 12px;
+            overflow-y: auto; max-height: calc(55vh - 65px);
+            display: flex; flex-direction: column; gap: 4px;
+        }
+        .radio-stations-list::-webkit-scrollbar { width: 4px; }
+        .radio-stations-list::-webkit-scrollbar-track { background: transparent; }
+        .radio-stations-list::-webkit-scrollbar-thumb {
+            background: rgba(166, 124, 255, 0.2); border-radius: 4px;
+        }
+        .radio-stations-list::-webkit-scrollbar-thumb:hover { background: rgba(166, 124, 255, 0.4); }
+
+        .radio-station-card {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 12px; border-radius: 12px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid transparent;
+            cursor: pointer; transition: all 0.25s;
+        }
+        .radio-station-card:hover {
+            background: rgba(166, 124, 255, 0.08);
+            border-color: rgba(166, 124, 255, 0.12);
+        }
+        .radio-station-card.active {
+            background: rgba(166, 124, 255, 0.12);
+            border-color: rgba(166, 124, 255, 0.25);
+        }
+        /* Removed .radio-station-card.active .radio-card-icon to keep it transparent */
+        .radio-card-icon {
+            width: 38px; height: 38px; border-radius: 10px;
+            background: rgba(166, 124, 255, 0.08);
+            border: 1px solid rgba(166, 124, 255, 0.1);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.6em; flex-shrink: 0; transition: all 0.25s;
+        }
+        .radio-card-info { flex: 1; min-width: 0; }
+        .radio-card-name {
+            font-size: 0.85em; font-weight: 500;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .radio-card-desc {
+            font-size: 0.68em; color: rgba(224, 224, 224, 0.4);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            margin-top: 1px;
+        }
+        .radio-card-eq {
+            display: flex; align-items: flex-end; gap: 1.5px;
+            height: 14px; opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .radio-station-card.active .radio-card-eq { opacity: 1; }
+        .radio-card-eq .bar {
+            width: 2.5px; border-radius: 1.5px;
+            background: var(--accent-color);
+            animation: radioWave 1.2s ease-in-out infinite;
+        }
+        .radio-card-eq .bar:nth-child(1) { animation-delay: 0s; height: 5px; }
+        .radio-card-eq .bar:nth-child(2) { animation-delay: 0.2s; height: 10px; }
+        .radio-card-eq .bar:nth-child(3) { animation-delay: 0.4s; height: 7px; }
+
         /* --- Mobile Performance & New Feature Responsive --- */
         @media (max-width: 768px) {
             .sticky-note, #notes-container { display: none !important; }
@@ -509,6 +725,69 @@
             /* Mobile: hide videos entirely, use static wallpapers for performance */
             .bg-video, #scene-preview-canvas { display: none !important; }
             #mobile-bg-image { display: block !important; }
+
+            /* Mobile Radio Player - Clean Single Row */
+            #radio-player-bar:not(.minimized) {
+                display: flex;
+                align-items: center;
+                width: calc(100% - 20px);
+                bottom: 80px; left: 10px; transform: none;
+                padding: 12px 16px; border-radius: 20px;
+                background: rgba(30, 20, 28, 0.95);
+            }
+            #radio-player-bar:not(.minimized) .rp-art {
+                width: 50px; height: 50px; font-size: 2.2em; margin-right: 12px;
+            }
+            #radio-player-bar:not(.minimized) .rp-info {
+                flex: 1; text-align: left; overflow: hidden;
+            }
+            #radio-player-bar:not(.minimized) .rp-title { font-size: 1.05em; margin-bottom: 2px; }
+            #radio-player-bar:not(.minimized) .rp-controls {
+                margin-left: 10px; gap: 12px;
+            }
+            
+            /* Hide visualizer, volume, prev, and next on mobile */
+            #radio-player-bar #rp-visualizer,
+            #radio-player-bar .rp-volume-wrap,
+            #radio-player-bar #rp-prev,
+            #radio-player-bar #rp-next { 
+                display: none !important; 
+            }
+
+            /* Hide the background visualizer button from footer on mobile */
+            .control-container:has(#visualizer-btn) { display: none !important; }
+
+            /* Mobile Radio Player - Minimized Floating Pill (Matches YouTube pill) */
+            #radio-player-bar.minimized {
+                bottom: 70px; left: 10px; right: auto; transform: none;
+                padding: 0 16px; border-radius: 30px;
+                width: 150px; height: 36px; box-sizing: border-box;
+                display: flex; align-items: center; justify-content: space-between;
+                gap: 8px; z-index: 90;
+            }
+            #radio-player-bar.minimized::before {
+                content: "Lofi Radio";
+                color: rgba(255, 255, 255, 0.9);
+                font-size: 0.75em;
+                font-weight: 500;
+                white-space: nowrap;
+                pointer-events: none;
+                z-index: 2;
+            }
+            /* Hide art, info, and play button when minimized on mobile */
+            #radio-player-bar.minimized .rp-art,
+            #radio-player-bar.minimized .rp-info,
+            #radio-player-bar.minimized .rp-play-btn { 
+                display: none !important; 
+            }
+            
+            #radio-player-bar.minimized .rp-controls { margin: 0; padding: 0; gap: 0; position: static; }
+            #radio-player-bar.minimized .rp-minimize-btn { 
+                font-size: 0.9rem; padding: 0; margin: 0; color: rgba(255,255,255,0.8);
+                position: absolute; inset: 0; width: 100%; height: 100%;
+                display: flex; align-items: center; justify-content: flex-end;
+                padding-right: 14px; border-radius: 30px; cursor: pointer; z-index: 1;
+            }
         }
         @media (max-width: 480px) {
             #weather-icon { font-size: 1em; }
@@ -635,6 +914,11 @@
             <button class="control-button" id="notes-btn" title="Add a Sticky Note"><i class="bi bi-sticky"></i></button>
             <span class="control-label">Notes</span>
         </div>
+
+        <div class="control-container">
+            <button class="control-button" id="radio-btn" title="Lofi Radio Stations"><i class="bi bi-broadcast"></i></button>
+            <span class="control-label">Radio</span>
+        </div>
         <div class="control-container">
             <button class="control-button" id="visualizer-btn" title="Toggle Visualizer"><i class="bi bi-soundwave"></i></button>
             <span class="control-label">Visualizer</span>
@@ -649,9 +933,40 @@
         </div>
     </footer>
 
+
     <!-- Pop-up Panels -->
     <div id="scenes-panel" class="ui-panel"></div>
     <div id="ambience-panel" class="ui-panel"></div>
+
+    <!-- Lofi Radio: Pill-Shaped Music Player (above footer) -->
+    <div id="radio-player-bar">
+        <div class="rp-art" id="rp-art">🎵</div>
+        <div class="rp-info">
+            <div class="rp-title" id="rp-title">Now Playing - Select a station</div>
+            <div class="rp-desc" id="rp-desc">Lofi Desk Radio</div>
+        </div>
+        <canvas id="rp-visualizer"></canvas>
+        <div class="rp-controls">
+            <button class="rp-btn" id="rp-prev" title="Previous"><i class="bi bi-skip-start-fill"></i></button>
+            <button class="rp-play-btn" id="rp-play" title="Play / Pause"><i class="bi bi-play-fill"></i></button>
+            <button class="rp-btn" id="rp-next" title="Next"><i class="bi bi-skip-end-fill"></i></button>
+            <div class="rp-volume-wrap">
+                <i class="bi bi-volume-up-fill"></i>
+                <input type="range" class="rp-volume-slider" id="rp-volume" min="0" max="1" step="0.01" value="0.7">
+            </div>
+            <button class="rp-btn rp-minimize-btn" id="rp-minimize" title="Minimize"><i class="bi bi-dash-lg"></i></button>
+        </div>
+    </div>
+
+    <!-- Lofi Radio Station Panel (List Only) -->
+    <div id="radio-panel">
+        <div class="radio-panel-header">
+            <h4><span class="radio-icon">📻</span> Lofi Stations</h4>
+            <button class="radio-panel-close" id="radio-panel-close" title="Close"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="radio-stations-list" id="radio-stations-list"></div>
+    </div>
+
     <div id="pomodoro-panel" class="ui-panel">
         <div id="pomodoro-session-selector">
             <button data-minutes="10">10 min</button>
@@ -1193,13 +1508,39 @@
             pomodoro: { btn: document.getElementById('pomodoro-btn'), panel: document.getElementById('pomodoro-panel') },
             alarm: { btn: document.getElementById('alarm-btn'), panel: document.getElementById('alarm-panel') },
             todo: { btn: document.getElementById('todo-btn'), panel: document.getElementById('todo-panel') },
+            radio: { btn: document.getElementById('radio-btn'), panel: document.getElementById('radio-panel') },
             about: { btn: document.getElementById('about-btn'), panel: document.getElementById('about-panel') }
         };
+
         Object.values(panels).forEach(item => {
             item.btn.addEventListener('click', () => {
                 const isActive = item.panel.classList.contains('active');
                 Object.values(panels).forEach(p => { p.panel.classList.remove('active'); p.btn.classList.remove('active'); });
-                if (!isActive) { item.panel.classList.add('active'); item.btn.classList.add('active'); }
+                
+                const playerBar = document.getElementById('radio-player-bar');
+                const minIcon = document.querySelector('#rp-minimize i');
+
+                if (!isActive) { 
+                    item.panel.classList.add('active'); 
+                    item.btn.classList.add('active'); 
+                    // Auto-minimize player when a panel opens
+                    if (playerBar && playerBar.classList.contains('active')) {
+                        if (!playerBar.classList.contains('minimized')) {
+                            playerBar.classList.add('minimized');
+                            if (minIcon) minIcon.className = 'bi bi-chevron-up';
+                            playerBar.dataset.autoMinimized = 'true';
+                        }
+                    }
+                } else {
+                    // Auto-maximize player when a panel closes, ONLY if it was auto-minimized
+                    if (playerBar && playerBar.classList.contains('active')) {
+                        if (playerBar.dataset.autoMinimized === 'true') {
+                            playerBar.classList.remove('minimized');
+                            if (minIcon) minIcon.className = 'bi bi-dash-lg';
+                            playerBar.dataset.autoMinimized = 'false';
+                        }
+                    }
+                }
             });
         });
 
@@ -1760,7 +2101,342 @@
             createNote();
         });
         document.getElementById('visualizer-btn').addEventListener('click', toggleVisualizer);
+
+        // ============================================================
+        //  LOFI RADIO STATIONS (Music Player + Station Panel)
+        // ============================================================
+        (function initLofiRadio() {
+            const lofiStations = [
+                { name: 'Lofi 24/7', icon: '🎧', desc: 'Chill beats • Non-stop', streamUrl: 'http://usa9.fastcast4u.com/proxy/jamz?mp=/1' },
+                { name: 'Chillhop', icon: '☕', desc: 'I Love Music • Study', streamUrl: 'https://streams.ilovemusic.de/iloveradio17.mp3' },
+                { name: 'Soma FM Groove Salad', icon: '🥗', desc: '320K AAC HLS', streamUrl: 'https://hls.somafm.com/hls/groovesalad/320k/program.m3u8' },
+                { name: '0R - MUSIC FOR SLEEP', icon: '🛌', desc: 'Ambient • Deep Sleep', streamUrl: 'http://radio.stereoscenic.com/asp-h' },
+                { name: 'Midnight Lofi', icon: '🌙', desc: 'Lo-fi / Chillhop', streamUrl: 'https://listen.reyfm.de/lofi_320kbps.mp3' },
+                { name: 'Study & Cafe', icon: '☕', desc: 'Chillout / Lounge', streamUrl: 'https://stream.zeno.fm/tabzverz0fctv' },
+                { name: 'Deep Focus', icon: '📚', desc: 'Ambient / Downtempo', streamUrl: 'https://ice6.somafm.com/dronezone-128-mp3' },
+                { name: 'Sleep & Relax', icon: '😴', desc: 'Ambient / Relaxation', streamUrl: 'http://streams.echoesofbluemars.org:8000/cryosleep' },
+                { name: 'Deep Space', icon: '🌌', desc: 'Space Ambient / Atmospheric', streamUrl: 'https://ice4.somafm.com/spacestation-128-mp3' },
+                { name: 'Night Drive', icon: '🚗', desc: 'Synthwave / Retrowave', streamUrl: 'https://stream.nightride.fm/nightride.mp3' },
+                { name: 'Cyberpunk City', icon: '🌃', desc: 'Synthwave / Electronic', streamUrl: 'https://stream.nightride.fm/chillsynth.mp3' },
+                { name: 'Forest & Nature', icon: '🌲', desc: 'Nature / Ambient', streamUrl: 'https://ice2.somafm.com/suburbsofgoa-128-mp3' },
+                { name: 'Meditation', icon: '🧘', desc: 'Meditation / New Age', streamUrl: 'https://stream.zeno.fm/h527zwd11uquv' },
+                { name: 'Ocean & Calm', icon: '🌊', desc: 'Ambient / Chillout', streamUrl: 'https://ice6.somafm.com/defcon-128-mp3' },
+                { name: 'Morning Chill', icon: '🌅', desc: 'Chillout / Downtempo', streamUrl: 'https://ice4.somafm.com/fluid-128-mp3' },
+                { name: 'Sunset Vibes', icon: '🌇', desc: 'Chillout / Lounge', streamUrl: 'https://ice6.somafm.com/secretagent-128-mp3' },
+                { name: 'Gaming Lofi', icon: '🎮', desc: 'Lo-fi / Game Music', streamUrl: 'https://stream.zeno.fm/f3wvbbqmdg8uv' },
+                { name: 'Coding Mode', icon: '💻', desc: 'Electronic / Chillout', streamUrl: 'https://stream.nightride.fm/datawave.mp3' },
+                { name: 'Creative Flow', icon: '✍️', desc: 'Instrumental / Downtempo', streamUrl: 'https://ice2.somafm.com/beatblender-128-mp3' },
+                { name: 'Romantic Evening', icon: '❤️', desc: 'Smooth Jazz / Lounge', streamUrl: 'https://0nlineradio.radioho.st/lounge-piano-jazz-bar?ref=radio-browser26' },
+                { name: 'Late Night', icon: '🥃', desc: 'Jazz / Blues / Lounge', streamUrl: 'https://ice2.somafm.com/seventies-128-mp3' },
+                { name: 'Energy Mode', icon: '⚡', desc: 'Electronic / Dance', streamUrl: 'https://streams.ilovemusic.de/iloveradio2.mp3' },
+                { name: 'Workout', icon: '🏋️', desc: 'Electronic / Rock / Dance', streamUrl: 'https://ice6.somafm.com/dubstep-128-mp3' },
+                { name: 'Travel Mode', icon: '🚆', desc: 'World / Chillout', streamUrl: 'https://ice4.somafm.com/poptron-128-mp3' },
+                { name: 'Rainy Night', icon: '☔', desc: 'Ambient / Jazz / Chill', streamUrl: 'https://ice2.somafm.com/missioncontrol-128-mp3' },
+                { name: 'Piano & Instrumental', icon: '🎹', desc: 'Piano / Classical / Ambient', streamUrl: 'https://stream.zeno.fm/wvr9s880m98uv' },
+                { name: 'Vintage Radio', icon: '📻', desc: 'Oldies / Retro / Jazz', streamUrl: 'https://ice6.somafm.com/bootliquor-128-mp3' },
+                { name: 'All-Night Chill', icon: '🌌', desc: 'Chillout / Ambient / Lo-fi', streamUrl: 'https://ice2.somafm.com/deepspaceone-128-mp3' },
+                { name: 'Lofi Hip Hop', icon: '🎧', desc: 'Classic Lofi', streamUrl: 'https://stream.zeno.fm/0r0xa792kwzuv' },
+                { name: 'Classic FM', icon: '🎼', desc: 'Classical / Relaxing', streamUrl: 'http://media-ice.musicradio.com/ClassicFMMP3' }
+            ];
+
+            const radioAudio = new Audio();
+            radioAudio.crossOrigin = 'anonymous';
+            radioAudio.volume = 0.7;
+            radioAudio.preload = 'none';
+            let currentStationIndex = -1;
+            let isRadioPlaying = false;
+
+            // DOM refs
+            const playerBar = document.getElementById('radio-player-bar');
+            const rpArt = document.getElementById('rp-art');
+            const rpTitle = document.getElementById('rp-title');
+            const rpDesc = document.getElementById('rp-desc');
+            const rpPlayBtn = document.getElementById('rp-play');
+            const rpVolume = document.getElementById('rp-volume');
+            const rpVisualizer = document.getElementById('rp-visualizer');
+            const rpVisCtx = rpVisualizer.getContext('2d');
+            const stationsList = document.getElementById('radio-stations-list');
+            let radioAnalyser, radioAudioCtx, radioSource, radioAnimId;
+
+            // Build station list
+            lofiStations.forEach((station, idx) => {
+                const card = document.createElement('div');
+                card.className = 'radio-station-card';
+                card.dataset.index = idx;
+                card.innerHTML = `
+                    <div class="radio-card-icon">${station.icon}</div>
+                    <div class="radio-card-info">
+                        <div class="radio-card-name">${station.name}</div>
+                        <div class="radio-card-desc">${station.desc}</div>
+                    </div>
+                    <div class="radio-card-eq">
+                        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                    </div>
+                `;
+                card.addEventListener('click', () => {
+                    playStation(idx);
+                    // Close panel automatically upon selection as requested
+                    document.getElementById('radio-panel').classList.remove('active');
+                    document.getElementById('radio-btn').classList.remove('active');
+                });
+                stationsList.appendChild(card);
+            });
+
+            // Volume control
+            function updateVolumeSliderBg() {
+                const val = rpVolume.value * 100;
+                rpVolume.style.background = `linear-gradient(to right, #fff ${val}%, rgba(255,255,255,0.15) ${val}%)`;
+            }
+            updateVolumeSliderBg();
+            let previousVolume = radioAudio.volume;
+            let isMuted = false;
+            
+            document.querySelector('.rp-volume-wrap i').addEventListener('click', (e) => {
+                const icon = e.target;
+                if (!isMuted) {
+                    previousVolume = radioAudio.volume > 0 ? radioAudio.volume : 0.7;
+                    radioAudio.volume = 0;
+                    rpVolume.value = 0;
+                    isMuted = true;
+                    icon.className = 'bi bi-volume-mute-fill';
+                } else {
+                    radioAudio.volume = previousVolume;
+                    rpVolume.value = previousVolume;
+                    isMuted = false;
+                    icon.className = 'bi bi-volume-up-fill';
+                }
+                updateVolumeSliderBg();
+            });
+
+            rpVolume.addEventListener('input', () => {
+                radioAudio.volume = rpVolume.value;
+                if (rpVolume.value > 0 && isMuted) {
+                    isMuted = false;
+                    document.querySelector('.rp-volume-wrap i').className = 'bi bi-volume-up-fill';
+                } else if (rpVolume.value == 0 && !isMuted) {
+                    isMuted = true;
+                    document.querySelector('.rp-volume-wrap i').className = 'bi bi-volume-mute-fill';
+                }
+                updateVolumeSliderBg();
+            });
+
+            let audioCtx, analyser, dataArray;
+            let audioSourceNode;
+
+            function initAudioContext() {
+                if (!audioCtx) {
+                    try {
+                        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                        analyser = audioCtx.createAnalyser();
+                        analyser.fftSize = 64; 
+                        dataArray = new Uint8Array(analyser.frequencyBinCount);
+                        
+                        audioSourceNode = audioCtx.createMediaElementSource(radioAudio);
+                        audioSourceNode.connect(analyser);
+                        analyser.connect(audioCtx.destination);
+                    } catch (e) {
+                        console.warn("AudioContext setup failed:", e);
+                    }
+                }
+                if (audioCtx && audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            }
+
+            function setPlaying(playing) {
+                isRadioPlaying = playing;
+                const icon = rpPlayBtn.querySelector('i');
+                if (playing) {
+                    icon.className = 'bi bi-pause-fill';
+                    initAudioContext();
+                    startVisualizer();
+                } else {
+                    icon.className = 'bi bi-play-fill';
+                    stopVisualizer();
+                }
+            }
+
+            function playStation(idx) {
+                const station = lofiStations[idx];
+                
+                // Show the player bar and highlight active card
+                playerBar.classList.add('active');
+                document.querySelectorAll('.radio-station-card').forEach(c => c.classList.remove('active'));
+                document.querySelector(`.radio-station-card[data-index='${idx}']`)?.classList.add('active');
+
+                // Update text to match user request: "Station Name"
+                rpTitle.textContent = station.name;
+                rpDesc.textContent = station.desc;
+                rpArt.textContent = station.icon;
+
+                // Toggle if same station
+                if (idx === currentStationIndex) {
+                    if (radioAudio.paused) {
+                        radioAudio.play().then(() => setPlaying(true)).catch(e => console.warn('Radio play failed:', e));
+                    } else {
+                        radioAudio.pause();
+                        setPlaying(false);
+                    }
+                    return;
+                }
+
+                currentStationIndex = idx;
+                rpPlayBtn.classList.add('loading');
+
+                radioAudio.pause();
+                radioAudio.src = station.streamUrl;
+                radioAudio.load();
+
+                radioAudio.play().then(() => {
+                    rpPlayBtn.classList.remove('loading');
+                    setPlaying(true);
+                }).catch(e => {
+                    console.warn('Radio play failed:', e);
+                    rpPlayBtn.classList.remove('loading');
+                    rpTitle.textContent = 'Error loading station';
+                });
+            }
+
+            rpPlayBtn.addEventListener('click', () => {
+                if (currentStationIndex < 0) { playStation(0); return; }
+                if (radioAudio.paused) {
+                    radioAudio.play().then(() => setPlaying(true)).catch(e => console.warn('Radio play failed:', e));
+                } else {
+                    radioAudio.pause(); setPlaying(false);
+                }
+            });
+
+            document.getElementById('rp-prev').addEventListener('click', () => {
+                if (currentStationIndex <= 0) playStation(lofiStations.length - 1);
+                else playStation(currentStationIndex - 1);
+            });
+            document.getElementById('rp-next').addEventListener('click', () => {
+                playStation((currentStationIndex + 1) % lofiStations.length);
+            });
+            document.getElementById('rp-minimize').addEventListener('click', () => {
+                playerBar.classList.toggle('minimized');
+                
+                // Clear the auto-minimized flag since the user took manual control
+                playerBar.dataset.autoMinimized = 'false';
+                
+                const icon = document.querySelector('#rp-minimize i');
+                if (playerBar.classList.contains('minimized')) {
+                    icon.className = 'bi bi-chevron-up';
+                } else {
+                    icon.className = 'bi bi-dash-lg';
+                }
+            });
+
+            // Buffering events
+            radioAudio.addEventListener('waiting', () => rpPlayBtn.classList.add('loading'));
+            radioAudio.addEventListener('playing', () => { rpPlayBtn.classList.remove('loading'); setPlaying(true); });
+            radioAudio.addEventListener('error', () => {
+                rpPlayBtn.classList.remove('loading'); setPlaying(false); rpTitle.textContent = 'Stream error';
+            });
+
+            // Visualizer logic (Smooth audio-reactive waveform)
+            let smoothedData = [];
+            
+            function startVisualizer() {
+                const canvas = rpVisualizer;
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = canvas.offsetWidth * dpr;
+                canvas.height = canvas.offsetHeight * dpr;
+                const ctx = rpVisCtx;
+
+                const barCount = 16;
+                if (smoothedData.length !== barCount) smoothedData = Array(barCount).fill(0);
+
+                function draw() {
+                    if (!isRadioPlaying) return;
+                    radioAnimId = requestAnimationFrame(draw);
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    
+                    let hasRealData = false;
+                    if (analyser && dataArray) {
+                        analyser.getByteFrequencyData(dataArray);
+                        // Check if we actually got non-zero data (CORS blocks return all 0s)
+                        for (let i = 0; i < dataArray.length; i++) {
+                            if (dataArray[i] > 0) { hasRealData = true; break; }
+                        }
+                    }
+
+                    const gap = 3 * dpr;
+                    const barW = (canvas.width - gap * (barCount - 1)) / barCount;
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+                    
+                    const time = Date.now() / 250;
+
+                    for (let i = 0; i < barCount; i++) {
+                        const nx = (i / (barCount - 1)) * 2 - 1; 
+                        const windowShape = Math.exp(-nx * nx * 2.5); // Gaussian bell curve
+                        
+                        let v = 0;
+                        if (hasRealData) {
+                            // Map bars to frequency bins (using lower 70% of bins)
+                            const bin = Math.floor((i / barCount) * (dataArray.length * 0.7));
+                            const raw = dataArray[bin] / 255.0;
+                            
+                            // Smooth interpolation for fluid movement
+                            smoothedData[i] += (raw - smoothedData[i]) * 0.15;
+                            // Scale data slightly and apply bell curve window
+                            v = windowShape * (smoothedData[i] * 1.5 + 0.1);
+                        } else {
+                            // Fallback flowing wave if CORS blocks actual audio data
+                            let wave = Math.sin(time * 1.8 + i * 0.5) * 0.5 + 
+                                       Math.cos(time * 1.2 - i * 0.3) * 0.5;
+                            wave = Math.abs(wave);
+                            v = windowShape * (wave * 0.7 + 0.3);
+                        }
+                        
+                        v = Math.max(v, 0.05); // Tiny base minimum for edges
+                        
+                        const h = Math.max(v * canvas.height, 2 * dpr);
+                        const x = i * (barW + gap);
+                        const y = (canvas.height - h) / 2; // Center vertically
+                        
+                        ctx.beginPath();
+                        if (ctx.roundRect) ctx.roundRect(x, y, barW, h, barW / 2);
+                        else ctx.rect(x, y, barW, h);
+                        ctx.fill();
+                    }
+                }
+                draw();
+            }
+
+            function stopVisualizer() {
+                if (radioAnimId) { cancelAnimationFrame(radioAnimId); radioAnimId = null; }
+                rpVisCtx.clearRect(0, 0, rpVisualizer.width, rpVisualizer.height);
+            }
+
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    if (isRadioPlaying) {
+                        const dpr = window.devicePixelRatio || 1;
+                        rpVisualizer.width = rpVisualizer.offsetWidth * dpr;
+                        rpVisualizer.height = rpVisualizer.offsetHeight * dpr;
+                    }
+                }, 250);
+            });
+
+            // Panel Close Button
+            document.getElementById('radio-panel-close').addEventListener('click', () => {
+                document.getElementById('radio-panel').classList.remove('active');
+                document.getElementById('radio-btn').classList.remove('active');
+            });
+
+            // Auto-play first station after 5 seconds when website opens
+            setTimeout(() => {
+                if (currentStationIndex === -1 && !isRadioPlaying) {
+                    playStation(0);
+                }
+            }, 5000);
+        })();
+
         switchScene(0); // Load default scene on start
+
     });
     </script>
 </body>
