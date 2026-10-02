@@ -17,6 +17,9 @@
 
     <!-- Supabase JS (for live people counter) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- YouTube IFrame API -->
+    <script src="https://www.youtube.com/iframe_api"></script>
 
     <style>
         /* 
@@ -129,6 +132,7 @@
         #datetime {
             text-align: right; font-weight: 300;
             text-shadow: 0 0 5px rgba(0,0,0,0.5);
+            position: relative;
         }
         #time { font-size: 2em; font-weight: 600; }
         #date { font-size: 1em; }
@@ -178,6 +182,19 @@
         .online-label {
             font-weight: 300;
             opacity: 0.8;
+        }
+        
+        #tracks-btn {
+            position: absolute; top: 100%; right: 0;
+            display: inline-flex; align-items: center; gap: 6px; margin-top: 8px;
+            background: rgba(255, 255, 255, 0.05); border: 1px solid var(--panel-border);
+            border-radius: 50px; padding: 4px 12px; font-size: 0.8em;
+            cursor: pointer; transition: all var(--transition-speed); color: var(--primary-text);
+            white-space: nowrap;
+        }
+        #tracks-btn:hover, #tracks-btn.active {
+            background: rgba(15, 18, 30, 0.85); border-color: var(--accent-color);
+            color: #fff;
         }
         
         #main-content {
@@ -532,6 +549,8 @@
             left: 20px;
             bottom: 20px;
             transform: none;
+            gap: 16px; /* Space between album art and controls */
+            border-radius: 40px; /* Keep it perfectly rounded */
         }
         #radio-player-bar.minimized .rp-info,
         #radio-player-bar.minimized .rp-volume-wrap {
@@ -558,11 +577,39 @@
             color: rgba(255,255,255,0.5); font-size: 0.85em;
             text-overflow: ellipsis; overflow: hidden;
         }
+        
+        .rp-timeline-container {
+            display: none; align-items: center; gap: 8px; margin-top: 4px;
+        }
+        .rp-timeline-container span {
+            font-size: 0.7em; color: rgba(255,255,255,0.6); font-variant-numeric: tabular-nums;
+            min-width: 28px;
+        }
+        .rp-progress-bar {
+            -webkit-appearance: none; appearance: none;
+            flex: 1; height: 4px; border-radius: 2px;
+            background: rgba(255,255,255,0.15); outline: none;
+            cursor: pointer;
+        }
+        .rp-progress-bar::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 10px; height: 10px; border-radius: 50%;
+            background: #fff; cursor: pointer; transition: transform 0.2s;
+        }
+        .rp-progress-bar::-webkit-slider-thumb:hover { transform: scale(1.3); }
 
         #rp-visualizer {
             width: 100px; height: 32px;
             margin: 0 16px; display: block;
             opacity: 0.85;
+        }
+        
+        /* Adjustments for Tracks Mode */
+        #radio-player-bar.tracks-mode #rp-visualizer {
+            display: none !important;
+        }
+        #radio-player-bar.tracks-mode .rp-info {
+            min-width: 250px;
+            margin-right: 20px; /* Space between text and controls */
         }
 
         .rp-controls {
@@ -611,7 +658,7 @@
         .rp-minimize-btn { margin-left: 12px; font-size: 1.1em; color: rgba(255,255,255,0.4); }
 
         /* --- Lofi Radio Station Panel (List Only) --- */
-        #radio-panel {
+        #radio-panel, #tracks-panel {
             position: fixed;
             bottom: 105px; left: 50%; transform: translateX(-50%);
             width: 380px; max-width: 90vw; max-height: 55vh;
@@ -625,7 +672,7 @@
             box-shadow: 0 8px 40px rgba(0,0,0,0.4);
             overflow: hidden;
         }
-        #radio-panel.active { display: flex; animation: fadeIn 0.3s ease-out; }
+        #radio-panel.active, #tracks-panel.active { display: flex; animation: fadeIn 0.3s ease-out; }
 
         .radio-panel-header {
             display: flex; align-items: center; justify-content: space-between;
@@ -735,22 +782,70 @@
                 background: rgba(30, 20, 28, 0.95);
             }
             #radio-player-bar:not(.minimized) .rp-art {
-                width: 50px; height: 50px; font-size: 2.2em; margin-right: 12px;
+                width: 40px; height: 40px; font-size: 1.8em; margin-right: 8px;
             }
             #radio-player-bar:not(.minimized) .rp-info {
                 flex: 1; text-align: left; overflow: hidden;
             }
-            #radio-player-bar:not(.minimized) .rp-title { font-size: 1.05em; margin-bottom: 2px; }
+            #radio-player-bar:not(.minimized) .rp-title { font-size: 0.95em; margin-bottom: 2px; }
             #radio-player-bar:not(.minimized) .rp-controls {
-                margin-left: 10px; gap: 12px;
+                margin-left: 4px; gap: 4px;
+            }
+            #radio-player-bar:not(.minimized) .rp-btn {
+                font-size: 1em; padding: 0 2px;
+            }
+            #radio-player-bar:not(.minimized) .rp-play-btn {
+                width: 36px; height: 36px; font-size: 1.2em;
             }
             
-            /* Hide visualizer, volume, prev, and next on mobile */
-            #radio-player-bar #rp-visualizer,
-            #radio-player-bar .rp-volume-wrap,
-            #radio-player-bar #rp-prev,
-            #radio-player-bar #rp-next { 
+            /* Hide visualizer on mobile. Keep volume wrap visible for slider */
+            #radio-player-bar #rp-visualizer { 
                 display: none !important; 
+            }
+            
+            /* Hide progress bar (scrubber) on mobile, keep timeline numbers */
+            #radio-player-bar #rp-progress-bar {
+                display: none !important;
+            }
+
+            #radio-player-bar .rp-volume-wrap {
+                display: flex !important;
+                position: relative;
+            }
+            #radio-player-bar .rp-volume-wrap i {
+                padding: 4px; /* Reduced from 8px to fit */
+            }
+            /* Dark background panel for the floating slider */
+            #radio-player-bar .rp-volume-wrap::before {
+                content: '';
+                position: absolute;
+                bottom: 45px; left: 50%;
+                transform: translateX(-50%);
+                width: 36px; height: 120px;
+                background: rgba(30, 20, 28, 0.98);
+                border-radius: 18px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                opacity: 0; pointer-events: none;
+                transition: opacity 0.3s;
+                z-index: 10;
+            }
+            #radio-player-bar .rp-volume-slider {
+                position: absolute;
+                bottom: 101px; /* Center of slider at 105px (45 + 60) from bottom. 105 - (8/2) = 101px */
+                left: 50%;
+                margin-left: -45px; /* Half of 90px width */
+                transform: rotate(270deg);
+                width: 90px;
+                height: 8px; /* Thicker for touch */
+                border-radius: 4px;
+                opacity: 0; pointer-events: none;
+                margin-top: 0;
+                z-index: 11;
+            }
+            #radio-player-bar .rp-volume-wrap.show-slider::before,
+            #radio-player-bar .rp-volume-wrap.show-slider .rp-volume-slider {
+                opacity: 1; pointer-events: all;
             }
 
             /* Hide the background visualizer button from footer on mobile */
@@ -773,19 +868,29 @@
                 pointer-events: none;
                 z-index: 2;
             }
-            /* Hide art, info, and play button when minimized on mobile */
+            /* Hide art, info, play button, shuffle, and volume when minimized on mobile */
             #radio-player-bar.minimized .rp-art,
             #radio-player-bar.minimized .rp-info,
-            #radio-player-bar.minimized .rp-play-btn { 
+            #radio-player-bar.minimized .rp-play-btn,
+            #radio-player-bar.minimized #rp-shuffle,
+            #radio-player-bar.minimized .rp-volume-wrap { 
                 display: none !important; 
             }
-            
-            #radio-player-bar.minimized .rp-controls { margin: 0; padding: 0; gap: 0; position: static; }
+            #radio-player-bar.minimized .rp-controls { 
+                margin: 0; padding: 0; gap: 16px; position: static; 
+                display: flex; justify-content: flex-end; flex: 1;
+                margin-right: 4px;
+            }
+            #radio-player-bar.minimized .rp-btn:not(.rp-minimize-btn) {
+                position: relative; z-index: 10;
+            }
             #radio-player-bar.minimized .rp-minimize-btn { 
-                font-size: 0.9rem; padding: 0; margin: 0; color: rgba(255,255,255,0.8);
                 position: absolute; inset: 0; width: 100%; height: 100%;
-                display: flex; align-items: center; justify-content: flex-end;
-                padding-right: 14px; border-radius: 30px; cursor: pointer; z-index: 1;
+                cursor: pointer; z-index: 1; background: transparent; border: none;
+            }
+            /* Hide the up arrow completely so it doesn't overlap */
+            #radio-player-bar.minimized .rp-minimize-btn i {
+                display: none;
             }
         }
         @media (max-width: 480px) {
@@ -845,6 +950,10 @@
                     <span class="online-dot"></span>
                     <span id="online-count">--</span>
                     <span class="online-label">online</span>
+                </div>
+                <div id="tracks-btn" title="Music Tracks & Playlists">
+                    <i class="bi bi-music-note-list"></i>
+                    <span>Tracks</span>
                 </div>
             </div>
         </div>
@@ -937,15 +1046,24 @@
     <div id="scenes-panel" class="ui-panel"></div>
     <div id="ambience-panel" class="ui-panel"></div>
 
+    <!-- Hidden YouTube player for Music Tracks -->
+    <div id="yt-audio-player" style="display:none; position:absolute; width:0; height:0; overflow:hidden;"></div>
+
     <!-- Lofi Radio: Pill-Shaped Music Player (above footer) -->
     <div id="radio-player-bar">
         <div class="rp-art" id="rp-art">🎵</div>
         <div class="rp-info">
             <div class="rp-title" id="rp-title">Now Playing - Select a station</div>
             <div class="rp-desc" id="rp-desc">Lofi Desk Radio</div>
+            <div class="rp-timeline-container" id="rp-timeline-container">
+                <span id="rp-current-time">0:00</span>
+                <input type="range" class="rp-progress-bar" id="rp-progress-bar" value="0" min="0" max="100" step="0.1">
+                <span id="rp-duration">0:00</span>
+            </div>
         </div>
         <canvas id="rp-visualizer"></canvas>
         <div class="rp-controls">
+            <button class="rp-btn" id="rp-shuffle" title="Shuffle (On by default)" style="display: none; color: var(--accent-color);"><i class="bi bi-shuffle"></i></button>
             <button class="rp-btn" id="rp-prev" title="Previous"><i class="bi bi-skip-start-fill"></i></button>
             <button class="rp-play-btn" id="rp-play" title="Play / Pause"><i class="bi bi-play-fill"></i></button>
             <button class="rp-btn" id="rp-next" title="Next"><i class="bi bi-skip-end-fill"></i></button>
@@ -964,6 +1082,15 @@
             <button class="radio-panel-close" id="radio-panel-close" title="Close"><i class="bi bi-x-lg"></i></button>
         </div>
         <div class="radio-stations-list" id="radio-stations-list"></div>
+    </div>
+
+    <!-- Music Tracks Panel (YouTube Playlists) -->
+    <div id="tracks-panel">
+        <div class="radio-panel-header">
+            <h4><i class="bi bi-music-note-list" style="color: var(--accent-color); margin-right: 5px;"></i> Music Tracks</h4>
+            <button class="radio-panel-close" id="tracks-panel-close" title="Close"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="radio-stations-list" id="tracks-list"></div>
     </div>
 
     <div id="pomodoro-panel" class="ui-panel">
@@ -1508,7 +1635,8 @@
             alarm: { btn: document.getElementById('alarm-btn'), panel: document.getElementById('alarm-panel') },
             todo: { btn: document.getElementById('todo-btn'), panel: document.getElementById('todo-panel') },
             radio: { btn: document.getElementById('radio-btn'), panel: document.getElementById('radio-panel') },
-            about: { btn: document.getElementById('about-btn'), panel: document.getElementById('about-panel') }
+            about: { btn: document.getElementById('about-btn'), panel: document.getElementById('about-panel') },
+            tracks: { btn: document.getElementById('tracks-btn'), panel: document.getElementById('tracks-panel') }
         };
 
         Object.values(panels).forEach(item => {
@@ -2100,6 +2228,15 @@
             createNote();
         });
         document.getElementById('visualizer-btn').addEventListener('click', toggleVisualizer);
+        
+        // Global state to switch between Lofi Radio and YouTube Tracks
+        window.currentMusicMode = 'radio'; // 'radio' or 'tracks'
+        window.stopRadioPlayback = null; // Will be assigned by initLofiRadio
+        window.stopTracksPlayback = null; // Will be assigned by initMusicTracks
+        
+        document.getElementById('tracks-panel-close').addEventListener('click', () => {
+            panels.tracks.panel.classList.remove('active');
+        });
 
         // ============================================================
         //  LOFI RADIO STATIONS (Music Player + Station Panel)
@@ -2175,6 +2312,11 @@
                     </div>
                 `;
                 card.addEventListener('click', () => {
+                    if (window.stopTracksPlayback) window.stopTracksPlayback();
+                    window.currentMusicMode = 'radio';
+                    document.getElementById('radio-player-bar').classList.remove('tracks-mode');
+                    document.getElementById('rp-shuffle').style.display = 'none';
+                    document.getElementById('rp-timeline-container').style.display = 'none';
                     playStation(idx);
                     // Close panel automatically upon selection as requested
                     document.getElementById('radio-panel').classList.remove('active');
@@ -2182,6 +2324,14 @@
                 });
                 stationsList.appendChild(card);
             });
+            
+            // Expose a way to stop radio from outside
+            window.stopRadioPlayback = () => {
+                if (!radioAudio.paused) {
+                    radioAudio.pause();
+                    setPlaying(false);
+                }
+            };
 
             // Volume control
             function updateVolumeSliderBg() {
@@ -2193,6 +2343,11 @@
             let isMuted = false;
             
             document.querySelector('.rp-volume-wrap i').addEventListener('click', (e) => {
+                if (window.innerWidth <= 768) {
+                    e.target.parentElement.classList.toggle('show-slider');
+                    e.stopImmediatePropagation();
+                    return;
+                }
                 const icon = e.target;
                 if (!isMuted) {
                     previousVolume = radioAudio.volume > 0 ? radioAudio.volume : 0.7;
@@ -2316,6 +2471,7 @@
             }
 
             rpPlayBtn.addEventListener('click', () => {
+                if (window.currentMusicMode !== 'radio') return;
                 if (currentStationIndex < 0) { playStation(0); return; }
                 if (radioAudio.paused) {
                     radioAudio.play().then(() => setPlaying(true)).catch(e => console.warn('Radio play failed:', e));
@@ -2325,10 +2481,12 @@
             });
 
             document.getElementById('rp-prev').addEventListener('click', () => {
+                if (window.currentMusicMode !== 'radio') return;
                 if (currentStationIndex <= 0) playStation(lofiStations.length - 1);
                 else playStation(currentStationIndex - 1);
             });
             document.getElementById('rp-next').addEventListener('click', () => {
+                if (window.currentMusicMode !== 'radio') return;
                 playStation((currentStationIndex + 1) % lofiStations.length);
             });
             document.getElementById('rp-minimize').addEventListener('click', () => {
@@ -2373,14 +2531,15 @@
                 if (smoothedData.length !== barCount) smoothedData = Array(barCount).fill(0);
 
                 function draw() {
-                    if (!isRadioPlaying) return;
+                    const isPlaying = (window.currentMusicMode === 'radio' && isRadioPlaying);
+                    if (!isPlaying) return;
+                    
                     radioAnimId = requestAnimationFrame(draw);
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
                     
                     let hasRealData = false;
-                    if (analyser && dataArray) {
+                    if (window.currentMusicMode === 'radio' && analyser && dataArray) {
                         analyser.getByteFrequencyData(dataArray);
-                        // Check if we actually got non-zero data (CORS blocks return all 0s)
                         for (let i = 0; i < dataArray.length; i++) {
                             if (dataArray[i] > 0) { hasRealData = true; break; }
                         }
@@ -2398,16 +2557,11 @@
                         
                         let v = 0;
                         if (hasRealData) {
-                            // Map bars to frequency bins (using lower 70% of bins)
                             const bin = Math.floor((i / barCount) * (dataArray.length * 0.7));
                             const raw = dataArray[bin] / 255.0;
-                            
-                            // Smooth interpolation for fluid movement
                             smoothedData[i] += (raw - smoothedData[i]) * 0.15;
-                            // Scale data slightly and apply bell curve window
                             v = windowShape * (smoothedData[i] * 1.5 + 0.1);
                         } else {
-                            // Fallback flowing wave if CORS blocks actual audio data
                             let wave = Math.sin(time * 1.8 + i * 0.5) * 0.5 + 
                                        Math.cos(time * 1.2 - i * 0.3) * 0.5;
                             wave = Math.abs(wave);
@@ -2434,11 +2588,16 @@
                 rpVisCtx.clearRect(0, 0, rpVisualizer.width, rpVisualizer.height);
             }
 
+            window.startVisualizer = startVisualizer;
+            window.stopVisualizer = stopVisualizer;
+
             let resizeTimer;
             window.addEventListener('resize', () => {
                 clearTimeout(resizeTimer);
                 resizeTimer = setTimeout(() => {
-                    if (isRadioPlaying) {
+                    const isPlaying = (window.currentMusicMode === 'radio' && isRadioPlaying) || 
+                                      (window.currentMusicMode === 'tracks' && window.isTracksPlaying);
+                    if (isPlaying) {
                         const dpr = window.devicePixelRatio || 1;
                         rpVisualizer.width = rpVisualizer.offsetWidth * dpr;
                         rpVisualizer.height = rpVisualizer.offsetHeight * dpr;
@@ -2458,6 +2617,262 @@
                     playStation(0);
                 }
             }, 5000);
+        })();
+
+        // ============================================================
+        //  YOUTUBE MUSIC TRACKS (Playlists)
+        // ============================================================
+        (function initMusicTracks() {
+            // DEVELOPER: You can customize these playlists here. Use a valid YouTube Playlist ID.
+            const tracksData = [
+                { name: 'Hindi 90s', icon: '📼', desc: 'Classic 90s Bollywood', playlistId: 'PL3-sRm8xAzY-epJg3826yY1_V4QpI9E1A' }, 
+                { name: 'English Pop', icon: '🎤', desc: 'Modern Pop Hits', playlistId: 'PL8FndTcjPhb8SeCWR8Irw43Na3Qx2qwXa' },
+                { name: 'Hindi Pop', icon: '🎸', desc: 'Latest Hindi Pop', playlistId: 'PL9bw4S5ePsEG9sE8T7p-3c6R3w2P0E7Ua' },
+                { name: 'Road Trip', icon: '🛣️', desc: 'Driving Anthems', playlistId: 'PLw-VjHDlEOgs658kAHR_LAaILBXb-sOQ5' },
+                { name: 'Bus Driver', icon: '🚌', desc: 'Local Transit Vibes', playlistId: 'PLvO2EVzT8O1k0HqC5Wd9mF76yF3R2s2w8' },
+                { name: 'Barber Shop', icon: '💈', desc: 'Chill Cuts', playlistId: 'PLOHoVaTp8R7dfrJW5pumS0hqRlb4Qk3f_' },
+                { name: 'Auto Driver', icon: '🛺', desc: 'Street Rhythms', playlistId: 'PLcK2ecZ3t3-aD20tQh2_9ePZ2v6nC_tI5' },
+                { name: 'Lofi Chill', icon: '☕', desc: 'Study & Relax', playlistId: 'PLOzDu-MXXLliO9fBNZOQTBDddoA3FzZUo' },
+                { name: 'Gym Motivation', icon: '🏋️', desc: 'Workout Mix', playlistId: 'PLmXxqSJJq-yU8cM4t645HNDy8sQ6uN0H8' }
+            ];
+
+            let ytPlayer = null;
+            let currentTrackIndex = -1;
+            let isTracksPlaying = false;
+            let isShuffle = true;
+
+            const playerBar = document.getElementById('radio-player-bar');
+            const rpArt = document.getElementById('rp-art');
+            const rpTitle = document.getElementById('rp-title');
+            const rpDesc = document.getElementById('rp-desc');
+            const rpPlayBtn = document.getElementById('rp-play');
+            const rpShuffleBtn = document.getElementById('rp-shuffle');
+            const tracksList = document.getElementById('tracks-list');
+
+            tracksData.forEach((track, idx) => {
+                const card = document.createElement('div');
+                card.className = 'radio-station-card'; // Reuse the modern CSS class
+                card.dataset.index = idx;
+                card.innerHTML = `
+                    <div class="radio-card-icon">${track.icon}</div>
+                    <div class="radio-card-info">
+                        <div class="radio-card-name">${track.name}</div>
+                        <div class="radio-card-desc">${track.desc}</div>
+                    </div>
+                    <div class="radio-card-eq">
+                        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                    </div>
+                `;
+                card.addEventListener('click', () => {
+                    if (window.stopRadioPlayback) window.stopRadioPlayback();
+                    window.currentMusicMode = 'tracks';
+                    document.getElementById('radio-player-bar').classList.add('tracks-mode');
+                    rpShuffleBtn.style.display = 'flex';
+                    document.getElementById('rp-timeline-container').style.display = 'flex';
+                    playTrack(idx);
+                    document.getElementById('tracks-panel').classList.remove('active');
+                    document.getElementById('tracks-btn').classList.remove('active');
+                });
+                tracksList.appendChild(card);
+            });
+
+            window.onYouTubeIframeAPIReady = function() {
+                ytPlayer = new YT.Player('yt-audio-player', {
+                    height: '0',
+                    width: '0',
+                    playerVars: {
+                        'autoplay': 0,
+                        'controls': 0,
+                        'disablekb': 1,
+                        'fs': 0,
+                        'modestbranding': 1,
+                        'playsinline': 1
+                    },
+                    events: {
+                        'onReady': onPlayerReady,
+                        'onStateChange': onPlayerStateChange,
+                        'onError': onPlayerError
+                    }
+                });
+            };
+
+            function onPlayerReady(event) {
+                rpShuffleBtn.style.color = isShuffle ? 'var(--accent-color)' : 'rgba(255,255,255,0.5)';
+                ytPlayer.setVolume(document.getElementById('rp-volume').value * 100);
+            }
+
+            let timelineInterval;
+            let isScrubbing = false;
+
+            function formatTime(seconds) {
+                if (!seconds || isNaN(seconds)) return '0:00';
+                const m = Math.floor(seconds / 60);
+                const s = Math.floor(seconds % 60);
+                return `${m}:${s.toString().padStart(2, '0')}`;
+            }
+
+            function updateTimeline() {
+                if (!ytPlayer || !isTracksPlaying) return;
+                const currentTime = ytPlayer.getCurrentTime() || 0;
+                const duration = ytPlayer.getDuration() || 0;
+                document.getElementById('rp-current-time').textContent = formatTime(currentTime);
+                document.getElementById('rp-duration').textContent = formatTime(duration);
+                if (duration > 0 && !isScrubbing) {
+                    document.getElementById('rp-progress-bar').value = (currentTime / duration) * 100;
+                }
+                
+                const data = ytPlayer.getVideoData();
+                if (data && data.title) {
+                    rpTitle.textContent = data.title;
+                    if (data.video_id) {
+                        rpArt.innerHTML = `<img src="https://img.youtube.com/vi/${data.video_id}/mqdefault.jpg" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">`;
+                    }
+                }
+            }
+
+            const progressBar = document.getElementById('rp-progress-bar');
+            progressBar.addEventListener('input', (e) => {
+                isScrubbing = true;
+                if (!ytPlayer) return;
+                const duration = ytPlayer.getDuration() || 0;
+                document.getElementById('rp-current-time').textContent = formatTime((e.target.value / 100) * duration);
+            });
+            progressBar.addEventListener('change', (e) => {
+                isScrubbing = false;
+                if (!ytPlayer) return;
+                const duration = ytPlayer.getDuration() || 0;
+                if (duration > 0) {
+                    ytPlayer.seekTo((e.target.value / 100) * duration, true);
+                }
+            });
+
+            function onPlayerStateChange(event) {
+                if (window.currentMusicMode !== 'tracks') return;
+                const icon = rpPlayBtn.querySelector('i');
+                if (event.data === YT.PlayerState.PLAYING) {
+                    isTracksPlaying = true;
+                    window.isTracksPlaying = true;
+                    icon.className = 'bi bi-pause-fill';
+                    rpPlayBtn.classList.remove('loading');
+                    if (!timelineInterval) timelineInterval = setInterval(updateTimeline, 500);
+                    if (window.startVisualizer) window.startVisualizer();
+                } else {
+                    if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
+                        isTracksPlaying = false;
+                        window.isTracksPlaying = false;
+                        icon.className = 'bi bi-play-fill';
+                        rpPlayBtn.classList.remove('loading');
+                        if (window.stopVisualizer) window.stopVisualizer();
+                    } else if (event.data === YT.PlayerState.BUFFERING) {
+                        rpPlayBtn.classList.add('loading');
+                    }
+                    if (event.data !== YT.PlayerState.PLAYING && event.data !== YT.PlayerState.BUFFERING) {
+                        clearInterval(timelineInterval);
+                        timelineInterval = null;
+                    }
+                }
+            }
+
+            function onPlayerError(event) {
+                if (window.currentMusicMode !== 'tracks') return;
+                rpPlayBtn.classList.remove('loading');
+                rpTitle.textContent = 'Error loading track playlist';
+            }
+
+            function playTrack(idx) {
+                if (!ytPlayer || !ytPlayer.loadPlaylist) {
+                    showNotification("YouTube Player not ready yet", "⏳");
+                    return;
+                }
+
+                const track = tracksData[idx];
+                playerBar.classList.add('active');
+                
+                document.querySelectorAll('#tracks-list .radio-station-card').forEach(c => c.classList.remove('active'));
+                document.querySelector(`#tracks-list .radio-station-card[data-index='${idx}']`)?.classList.add('active');
+
+                rpTitle.textContent = 'Loading track...';
+                rpDesc.textContent = track.name + ' • ' + track.desc;
+                rpArt.textContent = track.icon;
+
+                document.getElementById('rp-current-time').textContent = '0:00';
+                document.getElementById('rp-duration').textContent = '0:00';
+                document.getElementById('rp-progress-bar').value = 0;
+
+                if (idx === currentTrackIndex) {
+                    if (!isTracksPlaying) ytPlayer.playVideo();
+                    else ytPlayer.pauseVideo();
+                    return;
+                }
+
+                currentTrackIndex = idx;
+                rpPlayBtn.classList.add('loading');
+
+                ytPlayer.loadPlaylist({
+                    list: track.playlistId,
+                    listType: 'playlist'
+                });
+                
+                // Shuffle when new list loads
+                setTimeout(() => {
+                    ytPlayer.setShuffle(isShuffle);
+                    ytPlayer.setVolume(document.getElementById('rp-volume').value * 100);
+                }, 1000);
+            }
+
+            window.stopTracksPlayback = () => {
+                if (ytPlayer && isTracksPlaying) {
+                    ytPlayer.pauseVideo();
+                    isTracksPlaying = false;
+                    window.isTracksPlaying = false;
+                    clearInterval(timelineInterval);
+                    timelineInterval = null;
+                    if (window.stopVisualizer) window.stopVisualizer();
+                }
+            };
+
+            rpPlayBtn.addEventListener('click', () => {
+                if (window.currentMusicMode !== 'tracks') return;
+                if (!ytPlayer) return;
+                if (currentTrackIndex < 0) { playTrack(0); return; }
+                if (isTracksPlaying) {
+                    ytPlayer.pauseVideo();
+                } else {
+                    ytPlayer.playVideo();
+                }
+            });
+
+            document.getElementById('rp-prev').addEventListener('click', () => {
+                if (window.currentMusicMode !== 'tracks') return;
+                if (ytPlayer) ytPlayer.previousVideo();
+            });
+
+            document.getElementById('rp-next').addEventListener('click', () => {
+                if (window.currentMusicMode !== 'tracks') return;
+                if (ytPlayer) ytPlayer.nextVideo();
+            });
+
+            rpShuffleBtn.addEventListener('click', () => {
+                isShuffle = !isShuffle;
+                rpShuffleBtn.style.color = isShuffle ? 'var(--accent-color)' : 'rgba(255,255,255,0.5)';
+                if (ytPlayer) ytPlayer.setShuffle(isShuffle);
+            });
+
+            document.getElementById('rp-volume').addEventListener('input', (e) => {
+                if (ytPlayer && ytPlayer.setVolume) ytPlayer.setVolume(e.target.value * 100);
+            });
+            document.querySelector('.rp-volume-wrap i').addEventListener('click', (e) => {
+                if (window.innerWidth <= 768) {
+                    e.stopImmediatePropagation();
+                    return;
+                }
+                if (ytPlayer && ytPlayer.setVolume) {
+                    setTimeout(() => {
+                        ytPlayer.setVolume(document.getElementById('rp-volume').value * 100);
+                    }, 50);
+                }
+            });
+
         })();
 
         switchScene(0); // Load default scene on start
