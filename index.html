@@ -2107,14 +2107,14 @@
         // ============================================================
         (function initLofiRadio() {
             const lofiStations = [
-                { name: 'Lofi 24/7', icon: '🎧', desc: 'Chill beats • Non-stop', streamUrl: 'http://usa9.fastcast4u.com/proxy/jamz?mp=/1' },
+                { name: 'Lofi 24/7', icon: '🎧', desc: 'Chill beats • Non-stop', streamUrl: 'https://usa9.fastcast4u.com/proxy/jamz?mp=/1' },
                 { name: 'Chillhop', icon: '☕', desc: 'I Love Music • Study', streamUrl: 'https://streams.ilovemusic.de/iloveradio17.mp3' },
                 { name: 'Soma FM Groove Salad', icon: '🥗', desc: '320K AAC HLS', streamUrl: 'https://hls.somafm.com/hls/groovesalad/320k/program.m3u8' },
-                { name: '0R - MUSIC FOR SLEEP', icon: '🛌', desc: 'Ambient • Deep Sleep', streamUrl: 'http://radio.stereoscenic.com/asp-h' },
+                { name: '0R - MUSIC FOR SLEEP', icon: '🛌', desc: 'Ambient • Deep Sleep', streamUrl: 'https://radio.stereoscenic.com/asp-h' },
                 { name: 'Midnight Lofi', icon: '🌙', desc: 'Lo-fi / Chillhop', streamUrl: 'https://listen.reyfm.de/lofi_320kbps.mp3' },
                 { name: 'Study & Cafe', icon: '☕', desc: 'Chillout / Lounge', streamUrl: 'https://stream.zeno.fm/tabzverz0fctv' },
                 { name: 'Deep Focus', icon: '📚', desc: 'Ambient / Downtempo', streamUrl: 'https://ice6.somafm.com/dronezone-128-mp3' },
-                { name: 'Sleep & Relax', icon: '😴', desc: 'Ambient / Relaxation', streamUrl: 'http://streams.echoesofbluemars.org:8000/cryosleep' },
+                { name: 'Sleep & Relax', icon: '😴', desc: 'Ambient / Relaxation', streamUrl: 'https://streams.echoesofbluemars.org:8000/cryosleep' },
                 { name: 'Deep Space', icon: '🌌', desc: 'Space Ambient / Atmospheric', streamUrl: 'https://ice4.somafm.com/spacestation-128-mp3' },
                 { name: 'Night Drive', icon: '🚗', desc: 'Synthwave / Retrowave', streamUrl: 'https://stream.nightride.fm/nightride.mp3' },
                 { name: 'Cyberpunk City', icon: '🌃', desc: 'Synthwave / Electronic', streamUrl: 'https://stream.nightride.fm/chillsynth.mp3' },
@@ -2136,7 +2136,7 @@
                 { name: 'Vintage Radio', icon: '📻', desc: 'Oldies / Retro / Jazz', streamUrl: 'https://ice6.somafm.com/bootliquor-128-mp3' },
                 { name: 'All-Night Chill', icon: '🌌', desc: 'Chillout / Ambient / Lo-fi', streamUrl: 'https://ice2.somafm.com/deepspaceone-128-mp3' },
                 { name: 'Lofi Hip Hop', icon: '🎧', desc: 'Classic Lofi', streamUrl: 'https://stream.zeno.fm/0r0xa792kwzuv' },
-                { name: 'Classic FM', icon: '🎼', desc: 'Classical / Relaxing', streamUrl: 'http://media-ice.musicradio.com/ClassicFMMP3' }
+                { name: 'Classic FM', icon: '🎼', desc: 'Classical / Relaxing', streamUrl: 'https://media-ice.musicradio.com/ClassicFMMP3' }
             ];
 
             const radioAudio = new Audio();
@@ -2292,9 +2292,26 @@
                     setPlaying(true);
                 }).catch(e => {
                     console.warn('Radio play failed:', e);
-                    rpPlayBtn.classList.remove('loading');
-                    rpTitle.textContent = 'Error loading station';
+                    // On mobile, the play() promise can reject while the browser
+                    // continues buffering. Delay the error so the 'playing' event
+                    // has a chance to fire and override it.
+                    setTimeout(() => {
+                        if (radioAudio.paused && currentStationIndex === idx) {
+                            rpPlayBtn.classList.remove('loading');
+                            rpTitle.textContent = 'Error loading station';
+                        }
+                    }, 3000);
                 });
+            }
+
+            // Helper: restore station info for the current station
+            function restoreStationInfo() {
+                if (currentStationIndex >= 0 && currentStationIndex < lofiStations.length) {
+                    const s = lofiStations[currentStationIndex];
+                    rpTitle.textContent = s.name;
+                    rpDesc.textContent = s.desc;
+                    rpArt.textContent = s.icon;
+                }
             }
 
             rpPlayBtn.addEventListener('click', () => {
@@ -2329,9 +2346,16 @@
 
             // Buffering events
             radioAudio.addEventListener('waiting', () => rpPlayBtn.classList.add('loading'));
-            radioAudio.addEventListener('playing', () => { rpPlayBtn.classList.remove('loading'); setPlaying(true); });
+            radioAudio.addEventListener('playing', () => {
+                rpPlayBtn.classList.remove('loading');
+                restoreStationInfo();   // Always fix the title in case catch ran first
+                setPlaying(true);
+            });
             radioAudio.addEventListener('error', () => {
-                rpPlayBtn.classList.remove('loading'); setPlaying(false); rpTitle.textContent = 'Stream error';
+                // Only show error if the audio truly isn't playing
+                if (radioAudio.paused || radioAudio.ended) {
+                    rpPlayBtn.classList.remove('loading'); setPlaying(false); rpTitle.textContent = 'Stream error';
+                }
             });
 
             // Visualizer logic (Smooth audio-reactive waveform)
