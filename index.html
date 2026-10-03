@@ -21,6 +21,9 @@
     <!-- YouTube IFrame API -->
     <script src="https://www.youtube.com/iframe_api"></script>
 
+    <!-- HLS.js for m3u8 radio streams -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
     <style>
         /* 
          * Lofi Desk - Stylesheet
@@ -796,6 +799,13 @@
             }
             #radio-player-bar:not(.minimized) .rp-play-btn {
                 width: 36px; height: 36px; font-size: 1.2em;
+            }
+            #radio-player-bar.tracks-mode:not(.minimized) .rp-info {
+                min-width: 0 !important;
+                margin-right: 4px !important;
+            }
+            #radio-player-bar.tracks-mode:not(.minimized) .rp-controls {
+                gap: 4px !important;
             }
             
             /* Hide visualizer on mobile. Keep volume wrap visible for slider */
@@ -2274,7 +2284,10 @@
                 { name: '90s Country Music', icon: '🤠', desc: 'Country / 90s Classics', streamUrl: 'https://2.mystreaming.net/uber/cmr90scountry/icecast.audio' },
                 { name: 'Hindi Retro', icon: '🪷', desc: 'Hindi / Retro Classics', streamUrl: 'https://stream.zeno.fm/v2zfmxef798uv' },
                 { name: '90s Bengali', icon: '🎭', desc: 'Bengali / 90s Classics', streamUrl: 'http://stream.zeno.fm/2k6xfu1pvs8uv' },
-                { name: 'Melody Telugu', icon: '🌺', desc: 'Telugu / Melody', streamUrl: 'https://a1.asurahosting.com:9580/radio.mp3' }
+                { name: 'Melody Telugu', icon: '🌺', desc: 'Telugu / Melody', streamUrl: 'https://a1.asurahosting.com:9580/radio.mp3' },
+                { name: 'Bhajans', icon: '🛕', desc: 'Bhajans', streamUrl: 'https://s5.citrus3.com:8148/stream' },
+                { name: 'Bhaktisudha', icon: '🕉️', desc: 'Devotional', streamUrl: 'https://n0a.radiojar.com/cfqyfcspcv8uv' },
+                { name: 'Akashvani Kolkata', icon: '📻', desc: 'Regional / Bengali', streamUrl: 'https://airhlspush.pc.cdn.bitgravity.com/httppush/hlspbaudio245/hlspbaudio24564kbps.m3u8' }
             ];
 
             const radioAudio = new Audio();
@@ -2440,24 +2453,45 @@
                 rpPlayBtn.classList.add('loading');
 
                 radioAudio.pause();
-                radioAudio.src = station.streamUrl;
-                radioAudio.load();
+                if (window.hlsInstance) {
+                    window.hlsInstance.destroy();
+                    window.hlsInstance = null;
+                }
 
-                radioAudio.play().then(() => {
-                    rpPlayBtn.classList.remove('loading');
-                    setPlaying(true);
-                }).catch(e => {
-                    console.warn('Radio play failed:', e);
-                    // On mobile, the play() promise can reject while the browser
-                    // continues buffering. Delay the error so the 'playing' event
-                    // has a chance to fire and override it.
-                    setTimeout(() => {
-                        if (radioAudio.paused && currentStationIndex === idx) {
+                if (station.streamUrl.endsWith('.m3u8') && window.Hls && Hls.isSupported()) {
+                    window.hlsInstance = new Hls();
+                    window.hlsInstance.loadSource(station.streamUrl);
+                    window.hlsInstance.attachMedia(radioAudio);
+                    window.hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() {
+                        radioAudio.play().then(() => {
                             rpPlayBtn.classList.remove('loading');
-                            rpTitle.textContent = 'Error loading station';
-                        }
-                    }, 3000);
-                });
+                            setPlaying(true);
+                        }).catch(e => {
+                            console.warn('Radio play failed:', e);
+                            setTimeout(() => {
+                                if (radioAudio.paused && currentStationIndex === idx) {
+                                    rpPlayBtn.classList.remove('loading');
+                                    rpTitle.textContent = 'Error loading station';
+                                }
+                            }, 3000);
+                        });
+                    });
+                } else {
+                    radioAudio.src = station.streamUrl;
+                    radioAudio.load();
+                    radioAudio.play().then(() => {
+                        rpPlayBtn.classList.remove('loading');
+                        setPlaying(true);
+                    }).catch(e => {
+                        console.warn('Radio play failed:', e);
+                        setTimeout(() => {
+                            if (radioAudio.paused && currentStationIndex === idx) {
+                                rpPlayBtn.classList.remove('loading');
+                                rpTitle.textContent = 'Error loading station';
+                            }
+                        }, 3000);
+                    });
+                }
             }
 
             // Helper: restore station info for the current station
