@@ -790,7 +790,7 @@
             #radio-player-bar:not(.minimized) .rp-info {
                 flex: 1; text-align: left; overflow: hidden;
             }
-            #radio-player-bar:not(.minimized) .rp-title { font-size: 0.95em; margin-bottom: 2px; }
+            #radio-player-bar:not(.minimized) .rp-title { font-size: 0.8em; margin-bottom: 2px; }
             #radio-player-bar:not(.minimized) .rp-controls {
                 margin-left: 4px; gap: 4px;
             }
@@ -2255,6 +2255,9 @@
             const lofiStations = [
                 { name: 'Lofi 24/7', icon: '🎧', desc: 'Chill beats • Non-stop', streamUrl: 'https://usa9.fastcast4u.com/proxy/jamz?mp=/1' },
                 { name: 'Chillhop', icon: '☕', desc: 'I Love Music • Study', streamUrl: 'https://streams.ilovemusic.de/iloveradio17.mp3' },
+                { name: '0R - COFFEE SHOP', icon: '☕', desc: 'Lounge / Coffee', streamUrl: 'https://0nlineradio.radioho.st/lounge-coffee-bar-lounge?ref=radio-browser26' },
+                { name: '0R - BEETHOVEN', icon: '🎼', desc: 'Classical / Beethoven', streamUrl: 'https://0nlineradio.radioho.st/0r-beethoven?ref=radio-browser26' },
+                { name: 'CHILLOUT', icon: '🍃', desc: 'Chillout / Lo-fi', streamUrl: 'https://0nlineradio.radioho.st/0r-lo-fi?ref=radio-browser26' },
                 { name: '0R - MUSIC FOR SLEEP', icon: '🛌', desc: 'Ambient • Deep Sleep', streamUrl: 'https://radio.stereoscenic.com/asp-h' },
                 { name: 'Midnight Lofi', icon: '🌙', desc: 'Lo-fi / Chillhop', streamUrl: 'https://listen.reyfm.de/lofi_320kbps.mp3' },
                 { name: 'Study & Cafe', icon: '☕', desc: 'Chillout / Lounge', streamUrl: 'https://stream.zeno.fm/tabzverz0fctv' },
@@ -2744,6 +2747,9 @@
                 const s = Math.floor(seconds % 60);
                 return `${m}:${s.toString().padStart(2, '0')}`;
             }
+            function updateProgressBarBg(val) {
+                document.getElementById('rp-progress-bar').style.background = `linear-gradient(to right, #fff ${val}%, rgba(255,255,255,0.15) ${val}%)`;
+            }
 
             function updateTimeline() {
                 if (!ytPlayer || !isTracksPlaying) return;
@@ -2752,7 +2758,9 @@
                 document.getElementById('rp-current-time').textContent = formatTime(currentTime);
                 document.getElementById('rp-duration').textContent = formatTime(duration);
                 if (duration > 0 && !isScrubbing) {
-                    document.getElementById('rp-progress-bar').value = (currentTime / duration) * 100;
+                    const val = (currentTime / duration) * 100;
+                    document.getElementById('rp-progress-bar').value = val;
+                    updateProgressBarBg(val);
                 }
                 
                 const data = ytPlayer.getVideoData();
@@ -2770,6 +2778,7 @@
                 if (!ytPlayer) return;
                 const duration = ytPlayer.getDuration() || 0;
                 document.getElementById('rp-current-time').textContent = formatTime((e.target.value / 100) * duration);
+                updateProgressBarBg(e.target.value);
             });
             progressBar.addEventListener('change', (e) => {
                 isScrubbing = false;
@@ -2778,6 +2787,7 @@
                 if (duration > 0) {
                     ytPlayer.seekTo((e.target.value / 100) * duration, true);
                 }
+                updateProgressBarBg(e.target.value);
             });
 
             function onPlayerStateChange(event) {
