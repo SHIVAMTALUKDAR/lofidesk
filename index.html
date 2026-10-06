@@ -1100,6 +1100,10 @@
             <h4><i class="bi bi-music-note-list" style="color: var(--accent-color); margin-right: 5px;"></i> Music Tracks</h4>
             <button class="radio-panel-close" id="tracks-panel-close" title="Close"><i class="bi bi-x-lg"></i></button>
         </div>
+        <form id="custom-track-form" style="display: flex; gap: 10px; padding: 15px 15px 0 15px;">
+            <input type="text" id="custom-track-input" placeholder="Paste YouTube Playlist URL..." style="flex-grow: 1; background: rgba(0,0,0,0.3); border: 1px solid var(--panel-border); border-radius: 5px; padding: 8px; color: var(--primary-text); font-size: 0.8em;" required>
+            <button type="submit" style="background: var(--accent-color); border: none; color: white; padding: 0 15px; border-radius: 5px; cursor: pointer;">Play</button>
+        </form>
         <div class="radio-stations-list" id="tracks-list"></div>
     </div>
 
@@ -2662,17 +2666,18 @@
         (function initMusicTracks() {
             // DEVELOPER: You can customize these playlists here. Use a valid YouTube Playlist ID.
             const tracksData = [
-                { name: 'Hindi 90s', icon: '📼', desc: 'Classic 90s Bollywood', playlistId: 'PL3-sRm8xAzY-epJg3826yY1_V4QpI9E1A' }, 
+                { name: 'Synthwave', icon: '👾', desc: 'Retro Cyberpunk Vibes', playlistId: 'PLOzDu-MXXLliO9fBNZOQTBDddoA3FzZUo' },
+                { name: 'Hindi 90s', icon: '📼', desc: 'Classic 90s Bollywood', playlistId: '' }, 
                 { name: 'English Pop', icon: '🎤', desc: 'Modern Pop Hits', playlistId: 'PL8FndTcjPhb8SeCWR8Irw43Na3Qx2qwXa' },
-                { name: 'Hindi Pop', icon: '🎸', desc: 'Latest Hindi Pop', playlistId: 'PL9bw4S5ePsEG9sE8T7p-3c6R3w2P0E7Ua' },
-                { name: 'Road Trip Hindi', icon: '🛣️', desc: 'Driving Anthems', playlistId: 'PLMrf2fS_-ors&si=Tsa3RmCUZai24ZwH' },
-                { name: 'Road Trip English', icon: '🛣️', desc: 'Driving Anthems', playlistId: 'PLF3zaqEIh8Rg&si=81e-u8LHfUM7GJdw' },
-                { name: 'Bus Driver', icon: '🚌', desc: 'Local Transit Vibes', playlistId: 'PLeatb7hupNV_AWUl_7ttbsKeCQh8tF5N4&si=NwXXecM_Z9nM2OWG' },
-                { name: 'Local Barber', icon: '💈', desc: 'Chill Cuts', playlistId: 'PLUFy7PMA-OQg&si=T-o1zG-ONgH7qtaN' },
-                { name: 'Hairstylist', icon: '💈', desc: 'Chill Cuts', playlistId: 'PLi3iKV3Ja1yPiw8tSs2MimfkZKamE3SMX' },
-                { name: 'Auto Driver', icon: '🛺', desc: 'Street Rhythms', playlistId: 'PLa8s-SsEjzdI&si=Yeufg4El5aKoVVmH' },
-                { name: 'Lofi Chill', icon: '☕', desc: 'Study & Relax', playlistId: 'PLOzDu-MXXLliO9fBNZOQTBDddoA3FzZUo' },
-                { name: 'Gym Motivation', icon: '🏋️', desc: 'Workout Mix', playlistId: 'PLmXxqSJJq-yU8cM4t645HNDy8sQ6uN0H8' }
+                { name: 'Hindi Pop', icon: '🎸', desc: 'Latest Hindi Pop', playlistId: '' },
+                { name: 'Road Trip Hindi', icon: '🛣️', desc: 'Driving Anthems', playlistId: 'PL4fGSI1pDJn6jXS_Tv_N9B8Z0EEBs2F-L' },
+                { name: 'Road Trip English', icon: '🛣️', desc: 'Driving Anthems', playlistId: 'PLF3zaqEIh8Rg' },
+                { name: 'Bus Driver', icon: '🚌', desc: 'Local Transit Vibes', playlistId: 'PL64G6j8ePNur30tN0b_X3V6N0zH46jPz5' },
+                { name: 'Local Barber', icon: '💈', desc: 'Chill Cuts', playlistId: 'PLUFy7PMA-OQg' },
+                { name: 'Hairstylist', icon: '💈', desc: 'Chill Cuts', playlistId: 'PLMC9KNkIncKvYin_USF1qoJQnIyMAfRxl' },
+                { name: 'Auto Driver', icon: '🛺', desc: 'Street Rhythms', playlistId: 'PL4fGSI1pDJn5nZ4B2-G3B2gVqG29L8Xb1' },
+                { name: 'Lofi Chill', icon: '☕', desc: 'Study & Relax', playlistId: '' },
+                { name: 'Gym Motivation', icon: '🏋️', desc: 'Workout Mix', playlistId: '' }
             ];
 
             let ytPlayer = null;
@@ -2853,17 +2858,40 @@
 
                 currentTrackIndex = idx;
                 rpPlayBtn.classList.add('loading');
+                
+                // Clean the playlist ID in case it contains tracking parameters like &si=...
+                let cleanPlaylistId = track.playlistId || '';
+                if (cleanPlaylistId.includes('&')) {
+                    cleanPlaylistId = cleanPlaylistId.split('&')[0];
+                }
+                if (cleanPlaylistId.includes('?')) {
+                    cleanPlaylistId = cleanPlaylistId.split('?')[0];
+                }
+
+                if (!cleanPlaylistId) {
+                    rpTitle.textContent = 'Empty Playlist ID';
+                    rpPlayBtn.classList.remove('loading');
+                    return;
+                }
 
                 ytPlayer.loadPlaylist({
-                    list: track.playlistId,
+                    list: cleanPlaylistId,
                     listType: 'playlist'
                 });
                 
-                // Shuffle when new list loads
+                // Sometimes the API needs a little push to start
                 setTimeout(() => {
-                    ytPlayer.setShuffle(isShuffle);
-                    ytPlayer.setVolume(document.getElementById('rp-volume').value * 100);
-                }, 1000);
+                    if (ytPlayer && ytPlayer.playVideoAt) {
+                        try { ytPlayer.playVideoAt(0); } catch(e) {}
+                    }
+                }, 500);
+
+                setTimeout(() => {
+                    if (ytPlayer) {
+                        try { ytPlayer.setShuffle(isShuffle); } catch(e) {}
+                        try { ytPlayer.setVolume(document.getElementById('rp-volume').value * 100); } catch(e) {}
+                    }
+                }, 1500);
             }
 
             window.stopTracksPlayback = () => {
@@ -2917,6 +2945,61 @@
                         ytPlayer.setVolume(document.getElementById('rp-volume').value * 100);
                     }, 50);
                 }
+            });
+
+            document.getElementById('custom-track-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const url = document.getElementById('custom-track-input').value;
+                let listId = '';
+                
+                // Extract playlist ID from URL
+                const listMatch = url.match(/[?&]list=([^&]+)/);
+                if (listMatch) {
+                    listId = listMatch[1];
+                } else {
+                    listId = url.trim(); // Assume it's a direct ID if no ?list= found
+                }
+
+                if (!listId) return;
+
+                if (!ytPlayer || !ytPlayer.loadPlaylist) {
+                    showNotification("YouTube Player not ready yet", "⏳");
+                    return;
+                }
+
+                currentTrackIndex = -1; // Indicates custom track
+                playerBar.classList.add('active');
+                
+                // Deselect all cards
+                document.querySelectorAll('#tracks-list .radio-station-card').forEach(c => c.classList.remove('active'));
+
+                rpTitle.textContent = 'Loading custom playlist...';
+                rpDesc.textContent = 'Custom URL';
+                rpArt.textContent = '🔗';
+
+                document.getElementById('rp-current-time').textContent = '0:00';
+                document.getElementById('rp-duration').textContent = '0:00';
+                document.getElementById('rp-progress-bar').value = 0;
+
+                rpPlayBtn.classList.add('loading');
+
+                ytPlayer.loadPlaylist({
+                    list: listId,
+                    listType: 'playlist'
+                });
+                
+                setTimeout(() => {
+                    ytPlayer.setShuffle(isShuffle);
+                    ytPlayer.setVolume(document.getElementById('rp-volume').value * 100);
+                }, 1000);
+
+                if (window.stopRadioPlayback) window.stopRadioPlayback();
+                window.currentMusicMode = 'tracks';
+                document.getElementById('radio-player-bar').classList.add('tracks-mode');
+                rpShuffleBtn.style.display = 'flex';
+                document.getElementById('rp-timeline-container').style.display = 'flex';
+                document.getElementById('tracks-panel').classList.remove('active');
+                document.getElementById('tracks-btn').classList.remove('active');
             });
 
         })();
